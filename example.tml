@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE extension SYSTEM "extensions.dtd">
+
+<extension>
+
+    <grpname>group</grpname>
+    <extname>extension</extname>
+
+    <msg>
+        <name>coords</name>
+        <field>
+            <name>x</name>
+            <type>f64</type>
+        </field>
+        <field>
+            <name>y</name>
+            <type>f64</type>
+        </field>
+    </msg>
+
+    <msg>
+        <name>getcoords</name>
+        <!-- No content, it is a request -->
+    </msg>
+
+    <routine>
+        <name>sendcoords</name>
+        <jref>
+            <trigger>getcoords</trigger>
+            <jclass>com.ed522.example.ExampleHandler</jclass>
+            <jmethod>sendCoords</jmethod>
+        </jref>
+    </routine>
+
+    <routine>
+        <name>getcoords</name>
+        <jref>
+            <trigger>none</trigger>
+            <jclass>com.ed522.example.ExampleHandler</jclass>
+            <jmethod>getCoords</jmethod>
+        </jref>
+    </routine>
+
+</extension>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+
+    Copyright (c) 2024
+    ed522 All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+        Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+    THIS SOFTWARE IS PROVIDED BY ed522 “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL ed522 BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-->
+
+<!--
+
+Example:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE extension SYSTEM "extensions.dtd">
+
+<extension>
+    <grpname>group</grpname>
+    <extname>extension</extname>
+
+    <msg>
+        <name>coords</name>
+        <field>
+            <name>x</name>
+            <type>f64</type>
+        </field>
+        <field>
+            <name>y</name>
+            <type>f64</type>
+        </field>
+    </msg>
+
+    <msg>
+        <name>proved-command</name>
+        <field>
+            <name>cmd</name>
+            <type>str</name>
+            <proof factor="10" />
+        </field>
+    </msg>
+
+    <routine>
+        <name>oncoords</name>
+        <trigger>coords</trigger>
+        <jref>
+            <jclass>com.ed522.example.ExampleHandler</jclass>
+            <jmethod>handleRoutine()</jmethod>
+        </jref>
+    </routine>
+
+</extension>
+-->
+
+
+<!ELEMENT extension (grpname, extname, msg*, routine*)>
+
+<!ELEMENT grpname (#PCDATA)>
+<!ELEMENT extname (#PCDATA)>
+
+<!-- general use -->
+<!ELEMENT name (#PCDATA)>
+
+<!ELEMENT msg (name, field*, proof?)>
+<!ELEMENT field (name, type)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT proof EMPTY>
+
+<!ATTLIST proof factor CDATA #REQUIRED>
+<!ATTLIST proof signed CDATA "false">
+
+<!ELEMENT routine (name, trigger, (jref?, cppref?, rsref?))>
+<!ELEMENT trigger (#PCDATA)>
+
+<!ELEMENT jref (jclass, jmethod)>
+<!ELEMENT jclass (#PCDATA)>
+<!ELEMENT jmethod (#PCDATA)>
+<!ATTLIST jref register CDATA "true">
+
+<!ELEMENT cppref (exportsym)>
+<!ELEMENT exportsym (#PCDATA)>

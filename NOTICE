@@ -1,0 +1,6 @@
+This project is *mostly* licensed under Apache 2.0.
+However, the `grammar.dtd` file is licensed under BSD 1-clause (to allow distribution for dynamically-linked apps). The entire BSD text is included in the header.
+
+All files with no header or with the Apache header shall be licensed under the Apache license as one work.
+
+Any files with other headers (like grammar.dtd) shall be licensed under their applicable licenses.

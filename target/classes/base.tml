@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE extension SYSTEM "extensions.dtd">
+<extension>
+
+    <grpname>ed522.libkeychain</grpname>
+    <extname>lk-base</extname>
+
+    <msg>
+        <name>ack</name>
+    </msg>
+
+    <msg>
+        <name>srv-greet</name>
+        <field>
+            <name>rngnum1</name>
+            <type>i64</type>
+        </field>
+        <field>
+            <name>rngnum2</name>
+            <type>i64</type>
+        </field>
+        <field>
+            <name>rqexts</name>
+            <type>str[</type>
+        </field>
+        <field>
+            <name>trust</name>
+            <type>bool</type>
+        </field>
+    </msg>
+
+    <msg>
+
+        <name>cli-greet</name>
+        
+        <field>
+            <name>success</name>
+            <type>bool</type>
+        </field>
+        <field>
+            <name>cert</name>
+            <type>bin</type>
+        </field>
+
+        <proof factor="7" signed="true" />
+        
+    </msg>
+
+    <msg>
+        <name>srv-greetresp</name>
+
+        <field>
+            <name>success</name>
+            <type>bool</type>
+        </field>
+        <field>
+            <name>errno</name>
+            <type>u8</type>
+        </field>
+
+        <field>
+            <name>enrolled</name>
+            <type>bool</type>
+        </field>
+    </msg>
+
+    <msg>
+        <name>cli-enrollreq</name>
+
+        <field>
+            <name>alias</name>
+            <type>str</type>
+        </field>
+        <field>
+            <name>cert</name>
+            <type>bin</type>
+        </field>
+        
+        <proof factor="14" />
+
+    </msg>
+
+    <msg>
+        <name>srv-enrollrsp</name>
+        
+        <field>
+            <name>success</name>
+            <type>bool</type>
+        </field>
+        <field>
+            <name>errno</name>
+            <type>bool</type>
+        </field>
+    </msg>
+
+    <msg>
+        <name>cli-alias_numreq</name>
+        
+        <field>
+            <name>notreq</name>
+            <type>str[</type>
+        </field>
+        <proof factor="6" />
+    </msg>
+
+    <msg>
+        <name>srv-aliasnum</name>
+        <field>
+            <name>num</name>
+            <type>u64</type>
+        </field>
+    </msg>
+
+    <msg>
+        <name>cli-aliasreq</name>
+        <field>
+            <name>needed</name>
+            <type>str[</type>
+        </field>
+        <proof factor="com.ed522.libkeychain.base.Formulas#aliasRequest" />
+    </msg>
+
+</extension>
