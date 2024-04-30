@@ -33,7 +33,7 @@ import com.ed522.libkeychain.stores.ObservableArrayList;
 public class Keystore implements Closeable, Destroyable {
 
     private static final int PBKDF_ITERATIONS = 650_000;
-    private static final String PBKDF_MODE = "PBKDF2WithSHA256";
+    private static final String PBKDF_MODE = "PBKDF2WithHmacSHA256";
 
     protected static final byte[] VERIFICATION_BYTES = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
     
@@ -89,7 +89,7 @@ public class Keystore implements Closeable, Destroyable {
         file.write(saltToSet);
         
         SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, PBKDF_ITERATIONS));
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, PBKDF_ITERATIONS, 256));
         
         // chunked
         ChunkParser parser = new ChunkParser(masterKey);
@@ -107,7 +107,7 @@ public class Keystore implements Closeable, Destroyable {
         out.write(saltToSet);
         
         SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, PBKDF_ITERATIONS));
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, PBKDF_ITERATIONS, 256));
         
         // chunked
         ChunkParser parser = new ChunkParser(masterKey);
@@ -131,7 +131,7 @@ public class Keystore implements Closeable, Destroyable {
         file.read(masterSaltToSet);
 
         SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSaltToSet, PBKDF_ITERATIONS));
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSaltToSet, PBKDF_ITERATIONS, 256));
 
         // read first chunk
         ChunkParser parser = new ChunkParser(masterKey);
@@ -179,7 +179,7 @@ public class Keystore implements Closeable, Destroyable {
         }
         
         SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSalt, PBKDF_ITERATIONS));
+        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSalt, PBKDF_ITERATIONS, 256));
 
     }
 
@@ -221,7 +221,7 @@ public class Keystore implements Closeable, Destroyable {
         }
         
         SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, PBKDF_ITERATIONS));
+        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, PBKDF_ITERATIONS, 256));
 
     }
 
@@ -335,7 +335,8 @@ public class Keystore implements Closeable, Destroyable {
         try {
             this.masterKey.destroy();
         } catch (DestroyFailedException e) {
-            // disregard failed destroy, this is a close
+            // disregard failed destroy, this is a close operation
+            // not neededs
         }
     }
 

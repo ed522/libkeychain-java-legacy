@@ -123,7 +123,7 @@ public class ChunkParser {
 		int offset = 0;
 		byte[] salt = new byte[32];
 		new SecureRandom().nextBytes(salt);
-		copyArray(salt, data, 0, 0, salt.length);
+		copyArray(salt, out, 0, 0, salt.length);
 		offset += salt.length;
 
 		byte[] blockKeyRaw = new byte[32];
@@ -134,13 +134,13 @@ public class ChunkParser {
 
 		// gen IV
 		byte[] iv = new byte[16];
-		copyArray(iv, data, offset, 0, iv.length);
+		copyArray(iv, out, offset, 0, iv.length);
 		offset += iv.length;
 
 		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
 
-		writeInt(data.length + 12, iv, offset);
+		writeInt(data.length + 12, out, offset);
 		offset += Integer.BYTES;
 
 		copyArray(cipher.doFinal(data), out, offset, 0, -1 /* autodetect */);
