@@ -5,6 +5,7 @@ public class StandardAlgorithms {
     public static final int PBKDF2_ITERATIONS = 650_000;
     public static final int CHACHA20_IV_LENGTH = 12;
     public static final int CHACHA20_KEY_LENGTH = 32;
+    public static final int CHACHA20_TAG_LENGTH = 16;
     
     public static final String PBKDF_MODE = "PBKDF2WithHmacSHA256";
     public static final String SYMMETRIC_TRANSFORMATION = "ChaCha20-Poly1305";

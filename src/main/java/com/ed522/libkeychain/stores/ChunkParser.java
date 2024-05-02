@@ -27,7 +27,7 @@ public class ChunkParser {
 	/*
 	 * Structure:
 	 * 32B SALT       for block key derivation
-	 * 12B IV         MUST NOT be reused
+	 * 16B IV         MUST NOT be reused
 	 * 4B LEN         length of data + tag
 	 * <LEN> DATA   \ these are both
 	 * 16B TAG      / parsed together
@@ -86,7 +86,7 @@ public class ChunkParser {
 		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
 		out.write(iv);
 		
-		out.writeInt(data.length + 12);
+		out.writeInt(data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
 
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
@@ -113,7 +113,7 @@ public class ChunkParser {
 		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
 		out.write(iv);
 
-		out.writeInt(data.length + 12);
+		out.writeInt(data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
 		
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
@@ -143,13 +143,13 @@ public class ChunkParser {
 		copyArray(iv, out, 0, offset, iv.length);
 		offset += iv.length;
 
-		writeInt(data.length + 12, out, offset);
+		writeInt(data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH, out, offset);
 		offset += Integer.BYTES;
 
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
-		copyArray(cipher.doFinal(data), out, 0, offset, data.length + 12);
+		copyArray(cipher.doFinal(data), out, 0, offset, data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
 
 		return out;
 
@@ -179,13 +179,13 @@ public class ChunkParser {
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
 		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
-		writeInt(newData.length + 12, out, offset);
+		writeInt(newData.length + StandardAlgorithms.CHACHA20_TAG_LENGTH, out, offset);
 		offset += Integer.BYTES;
 
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
-		copyArray(cipher.doFinal(newData), out, 0, offset, newData.length + 12);
+		copyArray(cipher.doFinal(newData), out, 0, offset, newData.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
 
 		return out;
 
@@ -277,9 +277,9 @@ public class ChunkParser {
 
 	public int chunkLength(RandomAccessFile f) throws IOException {
 
-		f.seek(48 + f.getFilePointer());
-		int val = f.readInt() + 52;
-		f.seek(f.getFilePointer() - 52);
+		f.seek(44 + f.getFilePointer());
+		int val = f.readInt() + 48;
+		f.seek(f.getFilePointer() - 48);
 		return val;
 
 	}

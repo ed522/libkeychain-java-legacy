@@ -251,7 +251,7 @@ public class Keystore implements Closeable, Destroyable {
         long initial = raf.getFilePointer();
 
         /* find entry */
-        raf.seek(122); // skip master salt and seg0
+        raf.seek(120); // skip master salt and seg0
 
         long entryOffset = -1;
         long size = -1;
@@ -297,13 +297,14 @@ public class Keystore implements Closeable, Destroyable {
         raf.seek(36);
         // read chunk
         ChunkParser parser = new ChunkParser(masterKey);
-        byte[] chunk = new byte[parser.chunkLength(raf)];
+        int length = parser.chunkLength(raf);
+        byte[] chunk = new byte[length];
         raf.read(chunk);
         
         ByteBuffer buf = ByteBuffer.wrap(parser.decryptChunk(chunk)).position(VERIFICATION_BYTES.length);
-        long count = buf.getLong() + 1;
+        long newCount = buf.getLong() + 1;
         buf.position(buf.position() - 8);
-        buf.putLong(count);
+        buf.putLong(newCount);
 
         // write back chunk
         raf.seek(36);

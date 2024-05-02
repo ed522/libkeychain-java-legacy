@@ -147,7 +147,7 @@ public class KeystoreTest {
 
     @After
     public void teardown() {
-        file.delete();
+        // file.delete();
     }
     
 }
