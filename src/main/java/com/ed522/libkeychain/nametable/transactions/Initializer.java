@@ -1,4 +1,4 @@
-package com.ed522.libkeychain.nametable.routines;
+package com.ed522.libkeychain.nametable.transactions;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

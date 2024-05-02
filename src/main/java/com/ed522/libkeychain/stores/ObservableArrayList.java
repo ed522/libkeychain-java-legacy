@@ -1,6 +1,7 @@
 package com.ed522.libkeychain.stores;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -46,12 +47,26 @@ public class ObservableArrayList<T> extends ArrayList<T> {
 
 	@Override
 	public boolean equals(Object other) {
-		if (!(other instanceof ObservableArrayList)) return false;
-		return super.equals(other) && ((ObservableArrayList<?>) other).onAdd.equals(this.onAdd);
+		if (!(other instanceof ObservableArrayList<?> o)) return false;
+		return super.equals(o);
 	}
 	@Override
 	public int hashCode() {
-		return super.hashCode() * onAdd.hashCode() * 31;
+		return super.hashCode();
 	}
 
+	public boolean addUnchecked(T val) {
+		return super.add(val);
+	}
+
+	@Override
+	public boolean addAll(Collection<? extends T> values) {
+		for (T val : values)
+			for (Consumer<T> routine : onAdd) routine.accept(val);
+		return super.addAll(values);
+	}
+	
+	public boolean addAllUnchecked(Collection<? extends T> values) {
+		return super.addAll(values);
+	}
 }

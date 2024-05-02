@@ -3,14 +3,14 @@ package com.ed522.libkeychain.nametable;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ed522.libkeychain.nametable.routines.RoutineReference;
+import com.ed522.libkeychain.nametable.transactions.TransactionReference;
 
 public class Nametable {
     
     private String group;
     private String extension;
     private final List<MessageEntry> messages;
-    private final List<RoutineReference> routines;
+    private final List<TransactionReference> transactions;
     
     public Nametable(final String group, final String extension) {
 
@@ -18,7 +18,7 @@ public class Nametable {
         this.setExtension(extension);
 
         this.messages = new ArrayList<>();
-        this.routines = new ArrayList<>();
+        this.transactions = new ArrayList<>();
 
     }
 
@@ -39,8 +39,8 @@ public class Nametable {
     }
 
 
-    public List<RoutineReference> getRoutines() {
-        return routines;
+    public List<TransactionReference> getTransactions() {
+        return transactions;
     }
 
 

@@ -25,9 +25,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -40,25 +37,19 @@ import org.junit.Test;
 import com.ed522.libkeychain.logger.Logger;
 import com.ed522.libkeychain.logger.Logger.Level;
 import com.ed522.libkeychain.logger.Logger.LoggerOutputStream;
-import com.ed522.libkeychain.stores.keystore.Keystore;
-import com.ed522.libkeychain.stores.keystore.KeystoreEntry;
-import com.ed522.libkeychain.util.StandardAlgorithms;
+import com.ed522.libkeychain.stores.aliasstore.AliasStore;
+import com.ed522.libkeychain.stores.aliasstore.CertificateEntry;
 
-public class KeystoreTest {
+public class AliasStoreTest {
 
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    KeyPair firstPair;		// added at start, alias = test1
-    SecretKey firstSecret;	// added at start, alias = test1
-
-    SecretKey secondSecret;	// added at start, alias = test2
+    Certificate firstCert;    	// added at start, alias = test1
+    Certificate secondCert;   	// added at start, alias = test2
     
-    KeyPair thirdPair;		// added at start, alias = test3
-
-    KeyPair fourthPair;		// added after read, alias = test4
-    SecretKey fourthSecret;	// added after read, alias = test4
+    Certificate thirdCert;		// added after read, alias = test3
 
     private static final String PASSWORD = "testpasswd";
     private File file;
@@ -85,38 +76,30 @@ public class KeystoreTest {
     @Test
     public void storeTest() throws IOException, GeneralSecurityException, OperatorCreationException {
 
-        PrintStream logger = new PrintStream(new LoggerOutputStream(new Logger(), "KeystoreTest", Level.INFO));
+        PrintStream logger = new PrintStream(new LoggerOutputStream(new Logger(), "AliasStoreTest", Level.INFO));
         
-        Keystore first = new Keystore(file, PASSWORD);
-        first.add(new KeystoreEntry("test1", firstSecret));
-        first.add(new KeystoreEntry("test1", firstPair.getPrivate()));
-        first.add(new KeystoreEntry("test1", generateCertificate("test1", firstPair.getPublic(), firstPair.getPrivate())));
+        AliasStore first = new AliasStore(file, PASSWORD);
         
-        first.add(new KeystoreEntry("test2", secondSecret));
-
-        first.add(new KeystoreEntry("test3", thirdPair.getPrivate()));
-        first.add(new KeystoreEntry("test3", generateCertificate("test3", thirdPair.getPublic(), thirdPair.getPrivate())));
+        first.add(new CertificateEntry("test1", firstCert));
+        first.add(new CertificateEntry("test2", secondCert));
         
-        List<KeystoreEntry> firstEntries = first.getEntries();
+        List<CertificateEntry> firstEntries = first.getEntries();
         first.close();
 
-        Keystore second = new Keystore(file, PASSWORD);
-        List<KeystoreEntry> secondEntries = second.getEntries();
-
+        AliasStore second = new AliasStore(file, PASSWORD);
+        List<CertificateEntry> secondEntries = second.getEntries();
+        
         logger.println("First: ");
         firstEntries.forEach(logger::println);
         logger.println("Second: ");
         secondEntries.forEach(logger::println);
         assertEquals(firstEntries, secondEntries);
-
-        second.add(new KeystoreEntry("test4", fourthSecret));
-        second.add(new KeystoreEntry("test4", fourthPair.getPrivate()));
-        second.add(new KeystoreEntry("test4", generateCertificate("test4", fourthPair.getPublic(), fourthPair.getPrivate())));
-
+        
+        second.add(new CertificateEntry("test3", thirdCert));
         secondEntries = second.getEntries();
         second.close();
-
-        Keystore third = new Keystore(file, PASSWORD);
+        
+        AliasStore third = new AliasStore(file, PASSWORD);
         assertEquals(secondEntries, third.getEntries());
         assertNotEquals(firstEntries, third.getEntries());
 
@@ -126,22 +109,20 @@ public class KeystoreTest {
     }
 
     @Before
-    public void setup() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, IOException {
+    public void setup() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, IOException, CertificateException, OperatorCreationException {
         
-        file = new File("testkeystore.lks");
+        file = new File("testaliasstore.lks");
         file.createNewFile();
         
-        KeyPairGenerator aGen = KeyPairGenerator.getInstance(StandardAlgorithms.ASYMMETRIC_CIPHER);
-        aGen.initialize(new ECGenParameterSpec(StandardAlgorithms.ASYMMETRIC_CURVE_NAME));
-        this.firstPair = aGen.genKeyPair();
-        this.thirdPair = aGen.genKeyPair();
-        this.fourthPair = aGen.genKeyPair();
+        KeyPairGenerator aGen = KeyPairGenerator.getInstance("EdDSA");
+        aGen.initialize(new ECGenParameterSpec("Ed448"));
+        KeyPair first = aGen.genKeyPair();
+        KeyPair second = aGen.genKeyPair();
+        KeyPair third = aGen.genKeyPair();
 
-        KeyGenerator sGen = KeyGenerator.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
-        sGen.init(256);
-        this.firstSecret = sGen.generateKey();
-        this.secondSecret = sGen.generateKey();
-        this.fourthSecret = sGen.generateKey();
+        this.firstCert = generateCertificate("test1", first.getPublic(), first.getPrivate());
+        this.secondCert = generateCertificate("test2", second.getPublic(), second.getPrivate());
+        this.thirdCert = generateCertificate("test3", third.getPublic(), third.getPrivate());
 
     }
 

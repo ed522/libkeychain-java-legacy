@@ -1,0 +1,26 @@
+Using an "extended transaction model"
+Basically long transactions that can be interleaved.
+Something like this:
+
+client										server
+START TRANSACTION 0
+                                  TRANSACTION 0 OK
+MESSAGE [T0]
+                                      MESSAGE [T0]
+                        ...
+START TRANSACTION 1
+                                  TRANSACTION 1 OK
+MESSAGE [T1]
+                                      MESSAGE [T0]
+                                      MESSAGE [T1]
+MESSAGE [T0]
+                        ...
+END TRANSACTION 0
+                                  TRANSACTION 0 OK
+
+All messages have a transaction tag, and are automatically directed to their respective routines.
+This is inherently threaded, as multiple transactions send concurrently.
+
+The main listener (that directs the messages) will use a virtual thread, and individual transactions in the TML files can define if they use virtual threads.
+
+Messages to send for a transaction are added to a ConcurrentLinkedDeque and are processed first-in-first-out, or pipe style (where the oldest messages get priority).

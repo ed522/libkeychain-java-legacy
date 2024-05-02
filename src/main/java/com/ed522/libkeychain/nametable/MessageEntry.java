@@ -1,5 +1,6 @@
 package com.ed522.libkeychain.nametable;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,6 +11,7 @@ public class MessageEntry {
     private final String group;
 	private final String name;
 	private int proofFactor;
+	private Method proofFormula;
 	private boolean signed;
 
 
@@ -24,6 +26,12 @@ public class MessageEntry {
 	}
 	public void setProofFactor(int proofFactor) {
 		this.proofFactor = proofFactor;
+	}
+	public Method getProofFormula() {
+		return proofFormula;
+	}
+	public void setProofFormula(Method proofFormula) {
+		this.proofFormula = proofFormula;
 	}
 	public String getExtension() {
 		return extension;

@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -11,11 +12,15 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Base64;
 
 import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.bouncycastle.crypto.digests.Blake3Digest;
 
 public class KeystoreEntry {
 
@@ -31,9 +36,93 @@ public class KeystoreEntry {
 
     private static final int ensure(byte[] val, int len) throws ShortBufferException {
         if (val.length < len) throw new ShortBufferException(
-            String.format("Not enough bytes: need %i, got %i", len, val.length)
+            String.format("Not enough bytes: need %d, got %d", len, val.length)
         );
         else return len;
+    }
+    private static void zero(byte[] byteVal) {
+        Arrays.fill(byteVal, (byte) 0);
+    }
+
+    public static KeystoreEntry parse(final byte[] value) throws ShortBufferException, InvalidKeySpecException, NoSuchAlgorithmException, CertificateException {
+
+        // note: ensure() throws an exception if the buffer is shorter
+        // than the requirement (arg 2), and it returns the requirement
+
+        int lenNeeded = 0;
+        // get name
+        ByteBuffer buf = ByteBuffer.wrap(value);
+        lenNeeded = ensure(value, 4 + lenNeeded);
+        int namelen = buf.getInt();
+
+        lenNeeded = ensure(value, namelen + lenNeeded);
+        byte[] tempBuf = new byte[namelen];
+        buf.get(tempBuf);
+        String name = new String(tempBuf);
+
+        // get ID
+        lenNeeded = ensure(value, 1 + lenNeeded);
+        byte id = buf.get();
+        EntryType type = EntryType.forID(id);
+
+        // get value
+        lenNeeded = ensure(value, 4 + lenNeeded);
+        int vallen = buf.getInt();
+        
+        ensure(value, vallen + lenNeeded);
+        tempBuf = new byte[vallen];
+        buf.get(tempBuf);
+
+        if (type.equals(EntryType.PUBLIC)) {
+            // no algorithm name needed
+            Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(tempBuf));
+            return new KeystoreEntry(name, cert);
+        } else if (type.equals(EntryType.PRIVATE)) {
+
+            // copy contents
+            ByteBuffer b = ByteBuffer.allocate(tempBuf.length);
+            b.put(tempBuf);
+            b.rewind();
+
+            ensure(value, 2);
+            short algoNameLen = b.getShort();
+            byte[] algoNameRaw = new byte[algoNameLen];
+            b.get(algoNameRaw);
+
+            String algoName = new String(algoNameRaw, StandardCharsets.UTF_8);
+
+            tempBuf = new byte[vallen - (algoNameLen + 2)];
+            b.get(tempBuf);            
+
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(tempBuf);
+
+            KeyFactory factory = KeyFactory.getInstance(algoName);
+
+            return new KeystoreEntry(name, factory.generatePrivate(spec));
+        } else {
+
+            // secret key
+
+            // copy contents
+            ByteBuffer b = ByteBuffer.allocate(tempBuf.length);
+            b.put(tempBuf);
+            b.rewind();
+
+            ensure(tempBuf, 2);
+            short algoNameLen = b.getShort();
+            byte[] algoNameRaw = new byte[algoNameLen];
+            b.get(algoNameRaw);
+            
+            ensure(tempBuf, 2 + algoNameLen);
+            String algoName = new String(algoNameRaw, StandardCharsets.UTF_8);
+            
+            tempBuf = new byte[vallen - (algoNameLen + 2)];
+            b.get(tempBuf);
+            
+            return new KeystoreEntry(name, new SecretKeySpec(tempBuf, algoName));
+
+        }
+
     }
 
     public KeystoreEntry(String name, PrivateKey value) {
@@ -57,85 +146,7 @@ public class KeystoreEntry {
         this.certValue = null;
         this.secretValue = value;
     }
-
-    public static KeystoreEntry parse(final byte[] value) throws ShortBufferException, InvalidKeySpecException, NoSuchAlgorithmException, CertificateException {
-
-        // note: ensure() throws an exception if the buffer is shorter
-        // than the requirement (arg 2), and it returns the requirement
-
-        int lenNeeded = 0;
-        // get name
-        ByteBuffer buf = ByteBuffer.wrap(value);
-        lenNeeded = ensure(value, 4 + lenNeeded);
-        int namelen = buf.getInt();
-
-        lenNeeded = ensure(value, namelen + lenNeeded);
-        byte[] val = new byte[namelen];
-        buf.get(val);
-        String name = new String(val);
-
-        // get ID
-        lenNeeded = ensure(val, 1 + lenNeeded);
-        byte id = buf.get();
-        EntryType type = EntryType.forID(id);
-
-        // get value
-        lenNeeded = ensure(val, 4 + lenNeeded);
-        int vallen = buf.getInt();
-        
-        ensure(val, vallen + lenNeeded);
-        val = new byte[vallen];
-        buf.get(val);
-
-        if (type.equals(EntryType.PUBLIC)) {
-            // no algorithm name needed
-            Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(val));
-            return new KeystoreEntry(name, cert);
-        } else if (type.equals(EntryType.PRIVATE)) {
-
-            // copy contents
-            ByteBuffer b = ByteBuffer.allocate(val.length);
-            b.put(val);
-
-            ensure(val, 2);
-            short algoNameLen = b.getShort();
-            byte[] algoNameRaw = new byte[algoNameLen];
-            b.get(algoNameRaw);
-
-            String algoName = new String(algoNameRaw, StandardCharsets.UTF_8);
-
-            val = new byte[vallen - algoNameLen];
-            b.get(val);            
-
-            X509EncodedKeySpec spec = new X509EncodedKeySpec(val);
-
-            KeyFactory factory = KeyFactory.getInstance(algoName);
-
-            return new KeystoreEntry(name, factory.generatePrivate(spec));
-        } else {
-
-            // secret key
-
-            // copy contents
-            ByteBuffer b = ByteBuffer.allocate(val.length);
-            b.put(val);
-
-            ensure(val, 2);
-            short algoNameLen = b.getShort();
-            byte[] algoNameRaw = new byte[algoNameLen];
-            b.get(algoNameRaw);
-
-            String algoName = new String(algoNameRaw, StandardCharsets.UTF_8);
-
-            val = new byte[vallen - algoNameLen];
-            b.get(val);
-
-            return new KeystoreEntry(name, new SecretKeySpec(val, algoName));
-
-        }
-
-    }
-
+    
     public Certificate getCertificate() {
         if (!this.type.equals(EntryType.PUBLIC))
             throw new IllegalStateException("Wrong type: this entry is not a certificate");
@@ -161,6 +172,32 @@ public class KeystoreEntry {
         return type.value();
     }
 
+    public byte[] getByteValue() throws CertificateEncodingException {
+        if (type.equals(EntryType.PRIVATE)) return privateValue.getEncoded();
+        else if (type.equals(EntryType.SECRET)) return secretValue.getEncoded();
+        else return certValue.getEncoded();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("entry[type=");
+        builder.append(type.name());
+        builder.append(",name=");
+        builder.append(name);
+        builder.append(",fingerprint=");
+
+        try {
+            builder.append(Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA256").digest(this.getByteValue())));
+        } catch (CertificateEncodingException | NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+
+        builder.append("]");
+        return builder.toString();
+
+    }
+
     public byte[] encode() throws CertificateEncodingException {
         
         ByteBuffer buf = ByteBuffer.allocate(this.calcSize());
@@ -173,7 +210,7 @@ public class KeystoreEntry {
 
             // algorithm
             buf.putInt(
-                6 + this.getPrivate().getEncoded().length + 
+                2 + this.getPrivate().getEncoded().length + 
                 this.getPrivate()
                     .getAlgorithm()
                     .getBytes(StandardCharsets.UTF_8)
@@ -192,7 +229,7 @@ public class KeystoreEntry {
 
             // algorithm
             buf.putInt(
-                6 + this.getSecret().getEncoded().length + 
+                2 + this.getSecret().getEncoded().length + 
                 this.getSecret()
                     .getAlgorithm()
                     .getBytes(StandardCharsets.UTF_8)
@@ -251,6 +288,36 @@ public class KeystoreEntry {
                 9 + 
                 this.getName().getBytes(StandardCharsets.UTF_8).length + 
                 this.getCertificate().getEncoded().length;
+        }
+
+    }
+
+    public boolean equals(Object other) {
+        if (other instanceof KeystoreEntry entry) {
+            try {
+                return entry.getName().equals(this.getName()) && entry.getType().equals(this.getType()) && Arrays.equals(entry.getByteValue(), this.getByteValue());
+            } catch (CertificateEncodingException e) {
+                throw new IllegalStateException(e);
+            }
+        } else return false;
+    }
+
+    public int hashCode() {
+
+        // properly hash byte value
+        try {
+            
+            Blake3Digest digest = new Blake3Digest();
+            byte[] byteVal = this.getByteValue();
+            digest.update(byteVal, 0, byteVal.length);
+            zero(byteVal);
+            byte[] hash = new byte[32];
+            digest.doFinal(hash, 0);
+
+            return ByteBuffer.wrap(hash).getInt() * this.name.hashCode() * this.type.hashCode();
+
+        } catch (CertificateEncodingException e) {
+            throw new IllegalStateException(e);
         }
 
     }

@@ -2,6 +2,7 @@ package com.ed522.libkeychain.message;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +14,9 @@ public class Message {
 
     private final List<Field> fields;
     private final MessageEntry entry;
+    private final String associatedTransaction;
+    private short transactionNumber;
+    private byte[] proof;
 
     public String getGroup() {
         return entry.getGroup();
@@ -25,8 +29,9 @@ public class Message {
     }
 
 
-    public Message(MessageEntry entry) {
+    public Message(MessageEntry entry, String associatedTransaction) {
         this.entry = entry;
+        this.associatedTransaction = associatedTransaction;
         fields = new ArrayList<>();
 
         for (FieldEntry e : entry.getFields()) {
@@ -36,6 +41,9 @@ public class Message {
     }
 
 
+    protected void setProof(byte[] proof) {
+        this.proof = proof;
+    }
     protected void addNewField(Field field) {
         fields.add(field);
     }
@@ -96,6 +104,18 @@ public class Message {
             }
         }
 
+    }
+
+    protected void prepareToSend(short transactionNumber) throws IllegalAccessException, InvocationTargetException {
+        this.transactionNumber = transactionNumber;
+        calculateProof(entry.getProofFormula() != null ? (int) entry.getProofFormula().invoke(null) : entry.getProofFactor());
+    }
+
+    public void calculateProof(int factor) {
+        // TODO implement proofs
+    }
+    public void verifyProof(int factor) {
+        // TODO implement proofs
     }
 
     public void serializeToStream(OutputStream out) throws IOException {

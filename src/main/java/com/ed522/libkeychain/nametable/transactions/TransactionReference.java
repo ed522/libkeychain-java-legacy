@@ -1,11 +1,11 @@
-package com.ed522.libkeychain.nametable.routines;
+package com.ed522.libkeychain.nametable.transactions;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-public class RoutineReference {
+public class TransactionReference {
 
 	private enum AccessMode {
 		STATIC,
@@ -21,7 +21,7 @@ public class RoutineReference {
 	private final Class<?> type;
 	private final Method method;
 
-	public RoutineReference(Class<?> type, Method method, boolean initialize) throws ReflectiveOperationException {
+	public TransactionReference(Class<?> type, Method method, boolean initialize) throws ReflectiveOperationException {
 		
 		this.type = type;
 		this.method = method;

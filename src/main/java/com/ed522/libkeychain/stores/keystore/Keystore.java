@@ -29,12 +29,12 @@ import org.bouncycastle.util.Arrays;
 
 import com.ed522.libkeychain.stores.ChunkParser;
 import com.ed522.libkeychain.stores.ObservableArrayList;
+import com.ed522.libkeychain.util.StandardAlgorithms;
 
 public class Keystore implements Closeable, Destroyable {
 
-    private static final int PBKDF_ITERATIONS = 650_000;
-    private static final String PBKDF_MODE = "PBKDF2WithHmacSHA256";
-
+    private static final int SALT_LENGTH = 32;
+    private static final String ALREADY_CLOSED_MESSAGE = "Already closed or destroyed, not accessible anymore";
     protected static final byte[] VERIFICATION_BYTES = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
     
     /*
@@ -71,6 +71,7 @@ public class Keystore implements Closeable, Destroyable {
     private final RandomAccessFile raf;
     private final SecretKey masterKey;
     private final ObservableArrayList<KeystoreEntry> entries;
+    private boolean closed = false;
 
     private static byte[] toBytes(int val) {
         return ByteBuffer.allocate(4).putInt(val).array();
@@ -88,8 +89,8 @@ public class Keystore implements Closeable, Destroyable {
         new SecureRandom().nextBytes(saltToSet);
         file.write(saltToSet);
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, PBKDF_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
         
         // chunked
         ChunkParser parser = new ChunkParser(masterKey);
@@ -106,8 +107,8 @@ public class Keystore implements Closeable, Destroyable {
         new SecureRandom().nextBytes(saltToSet);
         out.write(saltToSet);
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, PBKDF_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
         
         // chunked
         ChunkParser parser = new ChunkParser(masterKey);
@@ -119,19 +120,18 @@ public class Keystore implements Closeable, Destroyable {
     }
     private static List<KeystoreEntry> readFile(RandomAccessFile file, String password, byte[] masterSaltToSet) throws GeneralSecurityException, IOException {
 
-        if (masterSaltToSet.length != 32) throw new IllegalArgumentException("Bad salt length (needs to be 32)");
-        
         List<KeystoreEntry> entryList = new ArrayList<>();
-
+        
         byte[] magicIn = new byte[4];
         file.read(magicIn);
         // magic
         if (!new String(magicIn, StandardCharsets.US_ASCII).equals("LKKS")) throw new StreamCorruptedException("Bad magic number (wrong file?)");
+        
+        if (masterSaltToSet.length != 32) throw new IllegalArgumentException("Bad salt length (needs to be 32)");
+        file.read(masterSaltToSet); // 32 bytes
 
-        file.read(masterSaltToSet);
-
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSaltToSet, PBKDF_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSaltToSet, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
 
         // read first chunk
         ChunkParser parser = new ChunkParser(masterKey);
@@ -167,7 +167,22 @@ public class Keystore implements Closeable, Destroyable {
         if (!file.exists() && !file.createNewFile()) throw new IllegalStateException("Failed to create file");
 
         this.raf = new RandomAccessFile(file, "rws");
-        entries = new ObservableArrayList<>(KeystoreEntry.class);
+        this.entries = new ObservableArrayList<>(KeystoreEntry.class);
+        this.entries.addOnAdd((KeystoreEntry entry) -> {
+            try {
+                newEntry(entry);
+            } catch (IOException | GeneralSecurityException e) {
+                throw new IllegalStateException(e);
+            }
+        });
+        this.entries.addOnRemove((KeystoreEntry entry) -> {
+            try {
+                removeEntry(entry.getName());
+            } catch (GeneralSecurityException | IOException e) {
+                throw new IllegalStateException(e);
+            }
+        });
+
         byte[] masterSalt = new byte[32];
 
         // build new
@@ -175,11 +190,11 @@ public class Keystore implements Closeable, Destroyable {
             buildFile(this.raf, password, masterSalt);
         } else {
             // read
-            entries.addAll(readFile(this.raf, password, masterSalt));
+            entries.addAllUnchecked(readFile(raf, password, masterSalt));
         }
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSalt, PBKDF_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
+        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSalt, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
 
     }
 
@@ -212,7 +227,7 @@ public class Keystore implements Closeable, Destroyable {
             }
         });
 
-        byte[] salt = new byte[32];
+        byte[] salt = new byte[SALT_LENGTH];
 
         buildFile(stream, password, salt);
 
@@ -220,12 +235,14 @@ public class Keystore implements Closeable, Destroyable {
             stream.write(e.encode());
         }
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(PBKDF_MODE);
-        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, PBKDF_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
+        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
 
     }
 
     private void removeEntry(String name) throws GeneralSecurityException, IOException {
+
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
 
         // 1. find the entry
         // 2. shift chunks of the file back
@@ -274,33 +291,61 @@ public class Keystore implements Closeable, Destroyable {
 
     private void newEntry(KeystoreEntry entry) throws IOException, GeneralSecurityException {
 
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
+
+        // Update chunk0
+        raf.seek(36);
+        // read chunk
+        ChunkParser parser = new ChunkParser(masterKey);
+        byte[] chunk = new byte[parser.chunkLength(raf)];
+        raf.read(chunk);
+        
+        ByteBuffer buf = ByteBuffer.wrap(parser.decryptChunk(chunk)).position(VERIFICATION_BYTES.length);
+        long count = buf.getLong() + 1;
+        buf.position(buf.position() - 8);
+        buf.putLong(count);
+
+        // write back chunk
+        raf.seek(36);
+        raf.write(parser.updateChunk(chunk, buf.array()));
+
         raf.seek(raf.length());
-        new ChunkParser(masterKey).newChunk(entry.encode(), raf);
+        parser.newChunk(entry.encode(), raf);
 
     }
 
+    @SuppressWarnings("unchecked") // we know it's a list
+    public List<KeystoreEntry> getEntries() {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
+        return (List<KeystoreEntry>) entries.clone();
+    }
     public void add(KeystoreEntry entry) {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         this.entries.add(entry);
     }
     public PrivateKey getPrivate(String name) {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         for (KeystoreEntry entry : entries) {
             if (entry.getName().equals(name) && entry.getType().equals(EntryType.PRIVATE)) return entry.getPrivate();
         }
         return null;
     }
     public Certificate getCertificate(String name) {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         for (KeystoreEntry entry : entries) {
             if (entry.getName().equals(name) && entry.getType().equals(EntryType.PUBLIC)) return entry.getCertificate();
         }
         return null;
     }
     public SecretKey getSecret(String name) {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         for (KeystoreEntry entry : entries) {
             if (entry.getName().equals(name) && entry.getType().equals(EntryType.SECRET)) return entry.getSecret();
         }
         return null;
     }
     public void remove(String name, EntryType type) {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         for (int i = 0; i < entries.size(); i++) {
             KeystoreEntry e = entries.get(i);
             if (e.getName().equals(name) && e.getType().equals(type)) entries.remove(i);
@@ -309,6 +354,7 @@ public class Keystore implements Closeable, Destroyable {
 
     @Override
     public boolean equals(Object other) {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         if (other instanceof Keystore ks) {
             return ks.entries.equals(this.entries) && Arrays.areEqual(this.masterKey.getEncoded(), ks.masterKey.getEncoded());
         } else return false;
@@ -316,6 +362,7 @@ public class Keystore implements Closeable, Destroyable {
 
     @Override
     public int hashCode() {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         // use a true hash bc the key is sensitive
         // however collisions aren't an issue so 32b will be fine
         try {
@@ -331,6 +378,7 @@ public class Keystore implements Closeable, Destroyable {
 
     @Override
     public void close() throws IOException {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         this.raf.close();
         try {
             this.masterKey.destroy();
@@ -338,11 +386,14 @@ public class Keystore implements Closeable, Destroyable {
             // disregard failed destroy, this is a close operation
             // not neededs
         }
+        this.closed = true;
     }
 
     @Override
     public void destroy() throws DestroyFailedException {
+        if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);
         this.masterKey.destroy();
+        this.closed = true; // closed is basically the same
     }
 
 }

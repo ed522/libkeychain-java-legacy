@@ -1,6 +1,7 @@
 package com.ed522.libkeychain.stores;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,25 +13,27 @@ import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
-import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
 import org.bouncycastle.crypto.params.HKDFParameters;
 
+import com.ed522.libkeychain.util.StandardAlgorithms;
+
 public class ChunkParser {
 	
 	/*
 	 * Structure:
-	 * 32B SALT       for key derivation
-	 * 16B IV         MUST NOT be reused
+	 * 32B SALT       for block key derivation
+	 * 12B IV         MUST NOT be reused
 	 * 4B LEN         length of data + tag
-	 * <LEN> DATA   \ these are boths
-	 * 12B TAG      / parsed together
+	 * <LEN> DATA   \ these are both
+	 * 16B TAG      / parsed together
 	 */
-
-	private static final String CIPHER_MODE = "AES/GCM/NoPadding";
+	
+    private static final int SALT_LENGTH = 32;
 	private static final int EXTRA_DATA = 64;
 	private Key masterKey;
 
@@ -39,7 +42,7 @@ public class ChunkParser {
 		if (srcOff == -1) srcOff = src.length; // autodetect
 
 		for (int i = 0; i < len; i++) {
-			dst[i + srcOff] = src[i + dstOff];
+			dst[i + dstOff] = src[i + srcOff];
 		}
 
 	}
@@ -53,7 +56,7 @@ public class ChunkParser {
 	}
 	private static final boolean incrementByteArray(byte[] value) {
 
-		for (int i = 0; i < value.length; i++) {
+		for (int i = value.length - 1; i >= 0; i--) {
 			value[i]++;
 			if (value[i] != 0) return false;
 		}
@@ -65,26 +68,28 @@ public class ChunkParser {
 		this.masterKey = key;
 	}
 
-	public int newChunk(byte[] data, OutputStream out) throws IOException, GeneralSecurityException {
+	public int newChunk(byte[] data, OutputStream output) throws IOException, GeneralSecurityException {
 
-		byte[] salt = new byte[32];
+		DataOutputStream out = new DataOutputStream(output);
+
+		byte[] salt = new byte[SALT_LENGTH];
 		new SecureRandom().nextBytes(salt);
 		out.write(salt);
 
-		byte[] blockKeyRaw = new byte[32];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
-		Key blockKey = new SecretKeySpec(blockKeyRaw, "AES");
+		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
 		// generate new IV
-		byte[] iv = new byte[16];
+		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
 		out.write(iv);
+		
+		out.writeInt(data.length + 12);
 
-		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
-		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
-
-		out.write(data.length + 12);
+		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
 		out.write(cipher.doFinal(data));
 		return EXTRA_DATA + data.length;
@@ -93,25 +98,26 @@ public class ChunkParser {
 
 	public int newChunk(byte[] data, RandomAccessFile out) throws IOException, GeneralSecurityException {
 
-		byte[] salt = new byte[32];
+		out.seek(out.length());
+		byte[] salt = new byte[SALT_LENGTH];
 		new SecureRandom().nextBytes(salt);
 		out.write(salt);
 
-		byte[] blockKeyRaw = new byte[32];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
-		Key blockKey = new SecretKeySpec(blockKeyRaw, "AES");
+		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
 		// generate new IV
-		byte[] iv = new byte[16];
+		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
 		out.write(iv);
 
-		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
-		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
-
-		out.write(data.length + 12);
-
+		out.writeInt(data.length + 12);
+		
+		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
+		
 		out.write(cipher.doFinal(data));
 		return EXTRA_DATA + data.length;
 
@@ -121,29 +127,29 @@ public class ChunkParser {
 		byte[] out = new byte[EXTRA_DATA + data.length];
 
 		int offset = 0;
-		byte[] salt = new byte[32];
+		byte[] salt = new byte[SALT_LENGTH];
 		new SecureRandom().nextBytes(salt);
 		copyArray(salt, out, 0, 0, salt.length);
 		offset += salt.length;
 
-		byte[] blockKeyRaw = new byte[32];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
-		Key blockKey = new SecretKeySpec(blockKeyRaw, "AES");
+		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
 		// gen IV
-		byte[] iv = new byte[16];
-		copyArray(iv, out, offset, 0, iv.length);
+		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		copyArray(iv, out, 0, offset, iv.length);
 		offset += iv.length;
-
-		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
-		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
 
 		writeInt(data.length + 12, out, offset);
 		offset += Integer.BYTES;
 
-		copyArray(cipher.doFinal(data), out, offset, 0, -1 /* autodetect */);
+		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
+
+		copyArray(cipher.doFinal(data), out, 0, offset, data.length + 12);
 
 		return out;
 
@@ -153,32 +159,33 @@ public class ChunkParser {
 
 		byte[] out = new byte[EXTRA_DATA + newData.length];
 
-		byte[] salt = new byte[32];
+		byte[] salt = new byte[SALT_LENGTH];
 		copyArray(chunk, salt, 0, 0, salt.length);
+		copyArray(salt, out, 0, 0, salt.length);
 		int offset = salt.length;
 		
-		byte[] iv = new byte[16];
+		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
 		copyArray(chunk, iv, offset, 0, iv.length);
-		copyArray(iv, out, 0, offset, iv.length);
-		offset += iv.length;
-
 		if (incrementByteArray(iv) /* true on overflow, new salt/IV */) {
 			return newChunk(newData);
 		}
 
-		byte[] blockKeyRaw = new byte[32];
+		copyArray(iv, out, 0, offset, iv.length);
+		offset += iv.length;
+
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
-		Key blockKey = new SecretKeySpec(blockKeyRaw, "AES");
+		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
-		writeInt(newData.length + 12, iv, offset);
+		writeInt(newData.length + 12, out, offset);
 		offset += Integer.BYTES;
 
-		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
-		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
+		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
-		copyArray(cipher.doFinal(newData), out, 0, offset, -1 /* autodetect length */);
+		copyArray(cipher.doFinal(newData), out, 0, offset, newData.length + 12);
 
 		return out;
 
@@ -188,22 +195,22 @@ public class ChunkParser {
 
 		DataInputStream in = new DataInputStream(input);
 
-		byte[] salt = new byte[32];
-		if (in.read(salt) != 32) throw new ShortBufferException(); // read salt
+		byte[] salt = new byte[SALT_LENGTH];
+		if (in.read(salt) != SALT_LENGTH) throw new ShortBufferException(); // read salt
 
-		byte[] iv = new byte[16];
-		if (in.read(iv) != 16) throw new ShortBufferException(); // read IV
+		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		if (in.read(iv) != StandardAlgorithms.CHACHA20_IV_LENGTH) throw new ShortBufferException(); // read IV
 		
 		int len = in.readInt();
 		
-		byte[] blockKeyRaw = new byte[32];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
-		Key blockKey = new SecretKeySpec(blockKeyRaw, "AES");
+		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 		
-		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
-		cipher.init(Cipher.DECRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
+		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+		cipher.init(Cipher.DECRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
 		cipher.doFinal(in.readNBytes(len), 0, len, output);
 
@@ -213,29 +220,27 @@ public class ChunkParser {
 
 	public byte[] decryptChunk(RandomAccessFile input) throws IOException, GeneralSecurityException {
 
-		byte[] salt = new byte[32];
-		if (input.read(salt) != 32) throw new ShortBufferException(); // read salt
+		byte[] salt = new byte[SALT_LENGTH];
+		if (input.read(salt) != SALT_LENGTH) throw new ShortBufferException(); // read salt
 
-		byte[] iv = new byte[16];
-		if (input.read(iv) != 16) throw new ShortBufferException(); // read IV
+		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		if (input.read(iv) != StandardAlgorithms.CHACHA20_IV_LENGTH) throw new ShortBufferException(); // read IV
 		
 		int len = input.readInt();
 		
-		byte[] blockKeyRaw = new byte[32];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
-		Key blockKey = new SecretKeySpec(blockKeyRaw, "AES");
+		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 		
-		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
-		cipher.init(Cipher.DECRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
+		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+		cipher.init(Cipher.DECRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
 		byte[] data = new byte[len];
-		input.read(data);
-		byte[] output = new byte[len - 12];
-		cipher.doFinal(data, 0, len, output);
-
-		return output;
+		if (input.read(data) != len) throw new ShortBufferException();
+		
+		return cipher.doFinal(data, 0, len);
 
 	}
 
@@ -243,27 +248,28 @@ public class ChunkParser {
 
 		int offset = 0;
 		// get salt
-		byte[] salt = new byte[32];
-		copyArray(input, salt, offset, 0, 32);
+		byte[] salt = new byte[SALT_LENGTH];
+		copyArray(input, salt, offset, 0, SALT_LENGTH);
 		offset += salt.length;
-
+		
 		// get IV
-		byte[] iv = new byte[16];
-		copyArray(input, iv, offset, 0, 16);
-
+		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		copyArray(input, iv, offset, 0, StandardAlgorithms.CHACHA20_IV_LENGTH);
+		offset += iv.length;
+		
 		// get length
 		int len = readInt(input, offset);
 		offset += 4;
 
 		// decrypt data
-		byte[] blockKeyRaw = new byte[32];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
-		Key blockKey = new SecretKeySpec(blockKeyRaw, "AES");
+		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 		
-		Cipher cipher = Cipher.getInstance(CIPHER_MODE);
-		cipher.init(Cipher.DECRYPT_MODE, blockKey, new GCMParameterSpec(96, iv));
+		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+		cipher.init(Cipher.DECRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
 		return cipher.doFinal(input, offset, len);
 
@@ -272,7 +278,9 @@ public class ChunkParser {
 	public int chunkLength(RandomAccessFile f) throws IOException {
 
 		f.seek(48 + f.getFilePointer());
-		return f.readInt() + 52;
+		int val = f.readInt() + 52;
+		f.seek(f.getFilePointer() - 52);
+		return val;
 
 	}
 

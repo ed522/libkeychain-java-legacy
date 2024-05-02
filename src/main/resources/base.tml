@@ -118,7 +118,7 @@
             <name>needed</name>
             <type>str[</type>
         </field>
-        <proof factor="com.ed522.libkeychain.base.Formulas#aliasRequest" />
+        <proof formula="com.ed522.libkeychain.base.Formulas#aliasRequest" />
     </msg>
 
 </extension>

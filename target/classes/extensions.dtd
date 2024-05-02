@@ -45,14 +45,14 @@ Example:
         </field>
     </msg>
 
-    <routine>
+    <transaction>
         <name>oncoords</name>
         <trigger>coords</trigger>
         <jref>
             <jclass>com.ed522.example.ExampleHandler</jclass>
             <jmethod>handleRoutine()</jmethod>
         </jref>
-    </routine>
+    </transaction>
 
 </extension>
 -->
@@ -71,16 +71,17 @@ Example:
 <!ELEMENT type (#PCDATA)>
 <!ELEMENT proof EMPTY>
 
-<!ATTLIST proof factor CDATA #REQUIRED>
+<!ATTLIST proof factor CDATA #IMPLIED>
 <!ATTLIST proof signed CDATA "false">
+<!ATTLIST proof formula CDATA #IMPLIED>
 
-<!ELEMENT routine (name, trigger, (jref?, cppref?, rsref?))>
-<!ELEMENT trigger (#PCDATA)>
+<!ELEMENT transaction (name, trigger, (jref?, cppref?, rsref?))>
 
 <!ELEMENT jref (jclass, jmethod)>
 <!ELEMENT jclass (#PCDATA)>
 <!ELEMENT jmethod (#PCDATA)>
 <!ATTLIST jref register CDATA "true">
+<!ATTLIST jref virtual CDATA "true">
 
 <!ELEMENT cppref (exportsym)>
 <!ELEMENT exportsym (#PCDATA)>
