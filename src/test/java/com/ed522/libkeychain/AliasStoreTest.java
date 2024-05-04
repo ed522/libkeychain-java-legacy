@@ -34,11 +34,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ed522.libkeychain.logger.Logger;
-import com.ed522.libkeychain.logger.Logger.Level;
-import com.ed522.libkeychain.logger.Logger.LoggerOutputStream;
 import com.ed522.libkeychain.stores.aliasstore.AliasStore;
 import com.ed522.libkeychain.stores.aliasstore.CertificateEntry;
+import com.ed522.libkeychain.util.Logger;
+import com.ed522.libkeychain.util.Logger.Level;
+import com.ed522.libkeychain.util.Logger.LoggerOutputStream;
 
 public class AliasStoreTest {
 

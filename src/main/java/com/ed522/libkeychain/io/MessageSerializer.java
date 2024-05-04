@@ -1,9 +1,12 @@
-package com.ed522.libkeychain.message;
+package com.ed522.libkeychain.io;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+
+import com.ed522.libkeychain.message.Field;
+import com.ed522.libkeychain.message.Message;
 
 public class MessageSerializer {
 

@@ -118,7 +118,15 @@
             <name>needed</name>
             <type>str[</type>
         </field>
-        <proof formula="com.ed522.libkeychain.base.Formulas#aliasRequest" />
+        <proof formula="com.ed522.libkeychain.basemod.Formulas#aliasRequest" />
     </msg>
+
+    <transaction>
+        <name>base</name>
+        <trigger>none</trigger>
+        <jref virtual="false">
+            <jclass>com.ed522.libkeychain.basemod.BaseTransaction</jclass>
+        </jref>
+    </transaction>
 
 </extension>

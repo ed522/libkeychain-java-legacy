@@ -5,6 +5,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+import com.ed522.libkeychain.transaction.Transaction;
+import com.ed522.libkeychain.transaction.backend.TransactionController;
+
 public class TransactionReference {
 
 	private enum AccessMode {
@@ -20,34 +23,29 @@ public class TransactionReference {
 
 	private final Class<?> type;
 	private final Method method;
+	private final String name;
 
-	public TransactionReference(Class<?> type, Method method, boolean initialize) throws ReflectiveOperationException {
+	public TransactionReference(Class<?> type, String name, boolean initialize) throws ReflectiveOperationException {
 		
 		this.type = type;
-		this.method = method;
+		if (!type.isAssignableFrom(Transaction.class)) throw new IllegalArgumentException("The type given does not extend Transaction");
+		this.method = type.getMethod("start", TransactionController.class);
+		this.name = name;
 
 		// The following conditions must be satisfied:
 		// 1. The type must exist and be accessible (enforced by Class object)
-		// 2. The method must exist and be accessible (part 1 enforced by object)
-		// 3. Method takes no arguments
-		// 4. One of the following must be satisfied:
-		//	a. The method is static
-		//	b. The type is registered
-		//	c. The class has a no-args static method annotated with @Initializer named "newInstance" that returns an instance
-		//	d. The class has a no-args constructor annotated with @Initializer
-		if (Modifier.isStatic(method.getModifiers()) && method.canAccess(null)) {
-			// Static mode
-			// No creator/constructor
-			mode = AccessMode.STATIC;
-			creator = null;
-			constructor = null;
-		} else if (InstanceRegistry.has(type)) {
+		// 2. The type must extend Transaction
+		// 3. One of the following must be satisfied:
+		//	a. The type is registered
+		//	b. The class has a no-args static factory method annotated with @Initializer named "newInstance"
+		//	c. The class has a no-args constructor annotated with @Initializer
+		if (InstanceRegistry.has(type)) {
 			// Registry mode, already registered
 			// No creator/constructor needed
 			mode = AccessMode.INSTANCE_REGISTRY;
 			creator = null;
 			constructor = null;
-		} else if (initialize) { // "initialize": make a new instance for registry?
+		} else if (initialize) { // "initialize": make a new instance for registry
 		
 			mode = AccessMode.INSTANCE_REGISTRY;
 			creator = null;
@@ -89,8 +87,11 @@ public class TransactionReference {
 		}
 
 	}
+	public String getName() {
+		return name;
+	}
 
-	public <T> Constructor<T> getSuitableConstructor(Class<T> type) throws NoSuchMethodException {
+	private <T> Constructor<T> getSuitableConstructor(Class<T> type) throws NoSuchMethodException {
 		
 		Constructor<T> c;
 		
@@ -109,7 +110,7 @@ public class TransactionReference {
 
 	}
 
-	public Method tryGetInitializerMethod(Class<?> type, String name) {
+	private Method tryGetInitializerMethod(Class<?> type, String name) {
 
 		try {
 			Method m = type.getMethod(name);
@@ -121,16 +122,14 @@ public class TransactionReference {
 
 	}
 
-	public void invoke() throws IllegalAccessException, InvocationTargetException, InstantiationException {
+	public void invokeMethod(TransactionController controller) throws IllegalAccessException, InvocationTargetException, InstantiationException {
 
-		if (mode.equals(AccessMode.STATIC)) {
-			method.invoke(null);
-		} else if (mode.equals(AccessMode.INSTANCE_REGISTRY)) {
-			method.invoke(InstanceRegistry.get(type));
+		if (mode.equals(AccessMode.INSTANCE_REGISTRY)) {
+			method.invoke(InstanceRegistry.get(type), controller);
 		} else if (mode.equals(AccessMode.INSTANCE_INITIALIZER)) {
-			method.invoke(creator.invoke(null));
+			method.invoke(creator.invoke(null), controller);
 		} else if (mode.equals(AccessMode.INSTANCE_CONSTRUCTOR)) {
-			method.invoke(constructor.newInstance());
+			method.invoke(constructor.newInstance(), controller);
 		}
 
 	}

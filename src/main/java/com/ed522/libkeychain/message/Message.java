@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ed522.libkeychain.io.MessageSerializer;
 import com.ed522.libkeychain.nametable.FieldEntry;
 import com.ed522.libkeychain.nametable.MessageEntry;
 
@@ -29,7 +30,7 @@ public class Message {
     }
 
 
-    public Message(MessageEntry entry, String associatedTransaction) {
+    protected Message(MessageEntry entry, String associatedTransaction) {
         this.entry = entry;
         this.associatedTransaction = associatedTransaction;
         fields = new ArrayList<>();
@@ -120,6 +121,10 @@ public class Message {
 
     public void serializeToStream(OutputStream out) throws IOException {
         MessageSerializer.serialize(this, out);
+    }
+    public Object getAssociatedTransaction() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getAssociatedTransaction'");
     }
 
 

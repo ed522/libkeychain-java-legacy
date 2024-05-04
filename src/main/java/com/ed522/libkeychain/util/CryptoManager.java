@@ -65,8 +65,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.util.Arrays;
 
-import com.ed522.libkeychain.logger.Logger;
-import com.ed522.libkeychain.logger.Logger.Level;
+import com.ed522.libkeychain.util.Logger.Level;
 
 public class CryptoManager {
     
@@ -151,11 +150,11 @@ public class CryptoManager {
     public CryptoManager(String name) throws NoSuchAlgorithmException, InvalidKeySpecException, CertificateException, IOException, OperatorCreationException, InvalidAlgorithmParameterException {
 
         KeyPairGenerator aGen = KeyPairGenerator.getInstance(StandardAlgorithms.ASYMMETRIC_CIPHER);
-        aGen.initialize(new ECGenParameterSpec("secp521r1"));
+        aGen.initialize(new ECGenParameterSpec(StandardAlgorithms.ASYMMETRIC_CURVE_NAME));
         this.keys = aGen.generateKeyPair();
 
-        KeyGenerator symGen = KeyGenerator.getInstance("AES");
-        symGen.init(256);
+        KeyGenerator symGen = KeyGenerator.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+        symGen.init(StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES);
         this.secret = symGen.generateKey();
 
         X509v3CertificateBuilder builder = new X509v3CertificateBuilder(
@@ -175,7 +174,7 @@ public class CryptoManager {
             new SubjectPublicKeyInfo(
                 // ecdsa-with-sha256
                 // RFC 7427
-                new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2")),
+                new AlgorithmIdentifier(new ASN1ObjectIdentifier(StandardAlgorithms.SIGNATURE_ALGORITHM_ASN1_OID)),
                 keys.getPublic().getEncoded()
             )
         );
@@ -275,14 +274,14 @@ public class CryptoManager {
     public byte[] encryptAsym(byte[] message, byte[] iv) throws GeneralSecurityException {
 
         KeyGenerator generator = KeyGenerator.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
-        generator.init(256);
+        generator.init(StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BITS);
 
         SecretKey messageSecret = generator.generateKey();
 
         Cipher wrapper = Cipher.getInstance(StandardAlgorithms.ASYMMETRIC_WRAP);
         wrapper.init(Cipher.WRAP_MODE, this.getCert().getPublicKey());
 
-        Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_TRANSFORMATION); // NOSONAR: Insecure padding (it's a stream cipher ffs)
+        Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_TRANSFORMATION);
         cipher.init(Cipher.ENCRYPT_MODE, messageSecret, new IvParameterSpec(iv));
         return Arrays.concatenate(wrapper.wrap(messageSecret), cipher.doFinal(message));
 
@@ -305,7 +304,7 @@ public class CryptoManager {
 
         Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_TRANSFORMATION); // NOSONAR: Insecure padding (it's a stream cipher ffs)
         cipher.init(Cipher.DECRYPT_MODE, messageSecret, new IvParameterSpec(iv));
-        return cipher.doFinal(Arrays.copyOfRange(message, StandardAlgorithms.CHACHA20_KEY_LENGTH, message.length));
+        return cipher.doFinal(Arrays.copyOfRange(message, StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES, message.length));
 
     }
 

@@ -112,7 +112,7 @@ public class NametableParser {
             Document doc = transactions.item(i).getOwnerDocument();
             TransactionReference reference;
             Class<?> type;
-            Method method;
+            String name;
 
             NodeList jrefs = doc.getElementsByTagName("jref");
             if (jrefs.getLength() == 0) continue;
@@ -124,13 +124,12 @@ public class NametableParser {
                     .item(0)
                     .getTextContent()
             );
-            method = type.getMethod(
-                jref.getElementsByTagName("jmethod")
-                    .item(0)
-                    .getTextContent()
-            );
+            name = jref.getElementsByTagName("name")
+                       .item(0)
+                       .getTextContent();
 
-            reference = new TransactionReference(type, method, Boolean.parseBoolean(
+
+            reference = new TransactionReference(type, name, Boolean.parseBoolean(
                 jref.getAttributes()
                     .getNamedItem("initialize")
                     .getTextContent()

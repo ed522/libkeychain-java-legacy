@@ -58,7 +58,7 @@ Example:
 -->
 
 
-<!ELEMENT extension (grpname, extname, msg*, routine*)>
+<!ELEMENT extension (grpname, extname, msg*, transaction*)>
 
 <!ELEMENT grpname (#PCDATA)>
 <!ELEMENT extname (#PCDATA)>
@@ -76,10 +76,10 @@ Example:
 <!ATTLIST proof formula CDATA #IMPLIED>
 
 <!ELEMENT transaction (name, trigger, (jref?, cppref?, rsref?))>
+<!ELEMENT trigger (#PCDATA)>
 
-<!ELEMENT jref (jclass, jmethod)>
+<!ELEMENT jref (jclass)>
 <!ELEMENT jclass (#PCDATA)>
-<!ELEMENT jmethod (#PCDATA)>
 <!ATTLIST jref register CDATA "true">
 <!ATTLIST jref virtual CDATA "true">
 

@@ -51,5 +51,11 @@ public class Nametable {
 
     }
 
+    public TransactionReference getTransaction(String name) {
+        
+        for (TransactionReference trf : transactions) if (trf.getName().equals(name)) return trf;
+        return null;
+
+    }
 
 }

@@ -37,12 +37,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ed522.libkeychain.logger.Logger;
-import com.ed522.libkeychain.logger.Logger.Level;
-import com.ed522.libkeychain.logger.Logger.LoggerOutputStream;
 import com.ed522.libkeychain.stores.keystore.Keystore;
 import com.ed522.libkeychain.stores.keystore.KeystoreEntry;
+import com.ed522.libkeychain.util.Logger;
 import com.ed522.libkeychain.util.StandardAlgorithms;
+import com.ed522.libkeychain.util.Logger.Level;
+import com.ed522.libkeychain.util.Logger.LoggerOutputStream;
 
 public class KeystoreTest {
 

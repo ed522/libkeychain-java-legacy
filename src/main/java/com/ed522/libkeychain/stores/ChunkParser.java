@@ -76,17 +76,17 @@ public class ChunkParser {
 		new SecureRandom().nextBytes(salt);
 		out.write(salt);
 
-		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
 		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
 		// generate new IV
-		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		byte[] iv = new byte[StandardAlgorithms.SYMMETRIC_IV_LENGTH];
 		out.write(iv);
 		
-		out.writeInt(data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
+		out.writeInt(data.length + StandardAlgorithms.SYMMETRIC_TAG_LENGTH);
 
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
@@ -103,17 +103,17 @@ public class ChunkParser {
 		new SecureRandom().nextBytes(salt);
 		out.write(salt);
 
-		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
 		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
 		// generate new IV
-		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		byte[] iv = new byte[StandardAlgorithms.SYMMETRIC_IV_LENGTH];
 		out.write(iv);
 
-		out.writeInt(data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
+		out.writeInt(data.length + StandardAlgorithms.SYMMETRIC_TAG_LENGTH);
 		
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
@@ -132,24 +132,24 @@ public class ChunkParser {
 		copyArray(salt, out, 0, 0, salt.length);
 		offset += salt.length;
 
-		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
 		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
 		// gen IV
-		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		byte[] iv = new byte[StandardAlgorithms.SYMMETRIC_IV_LENGTH];
 		copyArray(iv, out, 0, offset, iv.length);
 		offset += iv.length;
 
-		writeInt(data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH, out, offset);
+		writeInt(data.length + StandardAlgorithms.SYMMETRIC_TAG_LENGTH, out, offset);
 		offset += Integer.BYTES;
 
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
-		copyArray(cipher.doFinal(data), out, 0, offset, data.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
+		copyArray(cipher.doFinal(data), out, 0, offset, data.length + StandardAlgorithms.SYMMETRIC_TAG_LENGTH);
 
 		return out;
 
@@ -164,7 +164,7 @@ public class ChunkParser {
 		copyArray(salt, out, 0, 0, salt.length);
 		int offset = salt.length;
 		
-		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
+		byte[] iv = new byte[StandardAlgorithms.SYMMETRIC_IV_LENGTH];
 		copyArray(chunk, iv, offset, 0, iv.length);
 		if (incrementByteArray(iv) /* true on overflow, new salt/IV */) {
 			return newChunk(newData);
@@ -173,19 +173,19 @@ public class ChunkParser {
 		copyArray(iv, out, 0, offset, iv.length);
 		offset += iv.length;
 
-		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
 		Key blockKey = new SecretKeySpec(blockKeyRaw, StandardAlgorithms.SYMMETRIC_CIPHER);
 
-		writeInt(newData.length + StandardAlgorithms.CHACHA20_TAG_LENGTH, out, offset);
+		writeInt(newData.length + StandardAlgorithms.SYMMETRIC_TAG_LENGTH, out, offset);
 		offset += Integer.BYTES;
 
 		Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
 		cipher.init(Cipher.ENCRYPT_MODE, blockKey, new IvParameterSpec(iv));
 
-		copyArray(cipher.doFinal(newData), out, 0, offset, newData.length + StandardAlgorithms.CHACHA20_TAG_LENGTH);
+		copyArray(cipher.doFinal(newData), out, 0, offset, newData.length + StandardAlgorithms.SYMMETRIC_TAG_LENGTH);
 
 		return out;
 
@@ -198,12 +198,12 @@ public class ChunkParser {
 		byte[] salt = new byte[SALT_LENGTH];
 		if (in.read(salt) != SALT_LENGTH) throw new ShortBufferException(); // read salt
 
-		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
-		if (in.read(iv) != StandardAlgorithms.CHACHA20_IV_LENGTH) throw new ShortBufferException(); // read IV
+		byte[] iv = new byte[StandardAlgorithms.SYMMETRIC_IV_LENGTH];
+		if (in.read(iv) != StandardAlgorithms.SYMMETRIC_IV_LENGTH) throw new ShortBufferException(); // read IV
 		
 		int len = in.readInt();
 		
-		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
@@ -223,12 +223,12 @@ public class ChunkParser {
 		byte[] salt = new byte[SALT_LENGTH];
 		if (input.read(salt) != SALT_LENGTH) throw new ShortBufferException(); // read salt
 
-		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
-		if (input.read(iv) != StandardAlgorithms.CHACHA20_IV_LENGTH) throw new ShortBufferException(); // read IV
+		byte[] iv = new byte[StandardAlgorithms.SYMMETRIC_IV_LENGTH];
+		if (input.read(iv) != StandardAlgorithms.SYMMETRIC_IV_LENGTH) throw new ShortBufferException(); // read IV
 		
 		int len = input.readInt();
 		
-		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);
@@ -253,8 +253,8 @@ public class ChunkParser {
 		offset += salt.length;
 		
 		// get IV
-		byte[] iv = new byte[StandardAlgorithms.CHACHA20_IV_LENGTH];
-		copyArray(input, iv, offset, 0, StandardAlgorithms.CHACHA20_IV_LENGTH);
+		byte[] iv = new byte[StandardAlgorithms.SYMMETRIC_IV_LENGTH];
+		copyArray(input, iv, offset, 0, StandardAlgorithms.SYMMETRIC_IV_LENGTH);
 		offset += iv.length;
 		
 		// get length
@@ -262,7 +262,7 @@ public class ChunkParser {
 		offset += 4;
 
 		// decrypt data
-		byte[] blockKeyRaw = new byte[StandardAlgorithms.CHACHA20_KEY_LENGTH];
+		byte[] blockKeyRaw = new byte[StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES];
 		HKDFBytesGenerator hkdf = new HKDFBytesGenerator(new SHA256Digest());
 		hkdf.init(new HKDFParameters(masterKey.getEncoded(), salt, null));
 		hkdf.generateBytes(blockKeyRaw, 0, blockKeyRaw.length);

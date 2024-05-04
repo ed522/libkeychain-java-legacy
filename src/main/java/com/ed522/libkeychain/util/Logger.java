@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ed522.libkeychain.logger;
+package com.ed522.libkeychain.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
