@@ -1,5 +1,7 @@
 package com.ed522.libkeychain.stores.keystore;
 
+import static com.ed522.libkeychain.util.GeneralUtility.exactCastToShort;
+
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -216,7 +218,7 @@ public class KeystoreEntry {
                     .getBytes(StandardCharsets.UTF_8)
                     .length
             );
-            buf.putShort(exactCast(
+            buf.putShort(exactCastToShort(
                 this.getPrivate()
                     .getAlgorithm()
                     .getBytes(StandardCharsets.UTF_8)
@@ -235,7 +237,7 @@ public class KeystoreEntry {
                     .getBytes(StandardCharsets.UTF_8)
                     .length
             );
-            buf.putShort(exactCast(
+            buf.putShort(exactCastToShort(
                 this.getSecret()
                     .getAlgorithm()
                     .getBytes(StandardCharsets.UTF_8)
@@ -252,11 +254,6 @@ public class KeystoreEntry {
 
         return buf.array();
 
-    }
-
-    public short exactCast(int val) {
-        if (val < Short.MIN_VALUE || val > Short.MAX_VALUE) throw new ArithmeticException("Out of range");
-        else return (short) val;
     }
 
     public int calcSize() throws CertificateEncodingException {

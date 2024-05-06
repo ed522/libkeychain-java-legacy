@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.lang.reflect.MalformedParametersException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,6 +18,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.ed522.libkeychain.err.TooMuchDataException;
 import com.ed522.libkeychain.message.Message;
 import com.ed522.libkeychain.nametable.transactions.TransactionReference;
 
@@ -22,7 +26,7 @@ public class NametableParser {
 
     private NametableParser() {}
     
-    public static Nametable parse(File file) throws SAXException, IOException, ParserConfigurationException, DOMException, ReflectiveOperationException {
+    public static Nametable parse(File file) throws SAXException, IOException, ParserConfigurationException, ReflectiveOperationException {
 
         Nametable nametable = new Nametable("", "");
 
@@ -105,7 +109,15 @@ public class NametableParser {
 
         }
 
-        NodeList transactions = root.getElementsByTagName("transaction");
+        parseTransactions(root.getElementsByTagName("transaction"));
+
+        return nametable; 
+
+    }
+
+    private static List<TransactionReference> parseTransactions(NodeList transactions) throws DOMException, ReflectiveOperationException, TooMuchDataException {
+
+        List<TransactionReference> refs = new ArrayList<>();
 
         for (int i = 0; i < transactions.getLength(); i++) {
 
@@ -127,7 +139,7 @@ public class NametableParser {
             name = jref.getElementsByTagName("name")
                        .item(0)
                        .getTextContent();
-
+            if (name.getBytes(StandardCharsets.UTF_8).length > 65535) throw new TooMuchDataException();
 
             reference = new TransactionReference(type, name, Boolean.parseBoolean(
                 jref.getAttributes()
@@ -135,11 +147,11 @@ public class NametableParser {
                     .getTextContent()
             ));
 
-            nametable.getTransactions().add(reference);
+            refs.add(reference);
 
         }
 
-        return nametable; 
+        return refs;
 
     }
 

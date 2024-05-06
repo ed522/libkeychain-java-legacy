@@ -7,14 +7,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.ed522.libkeychain.message.Message;
-import com.ed522.libkeychain.nametable.Nametable;
 
 public class ReceiveDaemon implements Runnable {
 
     private final ConcurrentMap<Short, Queue<Message>> messageQueues = new ConcurrentHashMap<>();
     private final Socket socket;
 
-    public ReceiveDaemon(Socket socket, Nametable nt) {
+    public ReceiveDaemon(Socket socket) {
         this.socket = socket;
     }
 
@@ -28,8 +27,8 @@ public class ReceiveDaemon implements Runnable {
         while (true) {
 
             try {
-                Message msg = MessageDeserializer.deserialize(socket.getInputStream());
-                messageQueues.get(msg.getAssociatedTransaction()).add(msg);
+                Message msg = MessageCodec.deserializeMessage(socket.getInputStream());
+                messageQueues.get(msg.getTransactionNumber()).add(msg);
             } catch (IOException e) {
                 throw new IllegalStateException(e);
             }

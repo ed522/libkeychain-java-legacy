@@ -1,6 +1,8 @@
 package com.ed522.libkeychain.io;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,6 +20,20 @@ public class IOController {
 
     protected final Map<String, Short> getOngoingTransactions() {
         return ongoingTransactions;
+    }
+
+    public static final short getOngoingTransaction(String name) {
+        return ongoingTransactions.get(name);
+    }
+    public static final String getTransactionName(short id) {
+        List<String> nameList = new ArrayList<>();
+        ongoingTransactions.forEach((String s, Short i) -> {
+            if (i.shortValue() == id) {
+                if (nameList.isEmpty()) nameList.add(s);
+                return;
+            }
+        });
+        return nameList.get(0);
     }
 
     private final SendDaemon sender;

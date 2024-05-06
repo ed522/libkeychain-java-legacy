@@ -5,12 +5,14 @@ import java.net.Socket;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.ed522.libkeychain.message.Message;
-import com.ed522.libkeychain.message.Signal;
+import com.ed522.libkeychain.message.TransactionSignal;
 import com.ed522.libkeychain.nametable.Nametable;
 
 public class SendDaemon implements Runnable {
     
+    private final Object lock = new Object();
     private final ConcurrentLinkedDeque<Message> messageDeque;
+    private final ConcurrentLinkedDeque<TransactionSignal> signalDeque;
     private Socket socket;
     private Nametable nametable;
 
@@ -18,26 +20,34 @@ public class SendDaemon implements Runnable {
         this.socket = socket;
         this.nametable = nametable;
         this.messageDeque = new ConcurrentLinkedDeque<>();
+        this.signalDeque = new ConcurrentLinkedDeque<>();
     }
 
     public void send(Message message) {
         messageDeque.addFirst(message);
-        synchronized (messageDeque) {
-            messageDeque.notifyAll();
+        synchronized (lock) {
+            lock.notifyAll();
         }
     }
 
-    public void sendSignal(Signal signal)
+    public void sendSignal(TransactionSignal signal) {
+        signalDeque.addFirst(signal);
+        synchronized (lock) {
+            lock.notifyAll();
+        }
+    }
 
     @Override
     public void run() {
 
         try {
 
-            synchronized (messageDeque) {
-                messageDeque.wait();
+            synchronized (lock) {
+                while (messageDeque.isEmpty() && signalDeque.isEmpty())
+                    lock.wait();
             }
-            MessageSerializer.serialize(messageDeque.getLast(), socket.getOutputStream());
+            if (messageDeque.peekLast() != null) MessageCodec.serialize(messageDeque.getLast(), socket.getOutputStream());
+            if (signalDeque.peekLast() != null) MessageCodec.serialize(signalDeque.getLast(), socket.getOutputStream());
             
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
