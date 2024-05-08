@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.ed522.libkeychain.message.Message;
 import com.ed522.libkeychain.message.TransactionSignal;
-import com.ed522.libkeychain.nametable.Nametable;
 
 public class SendDaemon implements Runnable {
     
@@ -14,11 +13,9 @@ public class SendDaemon implements Runnable {
     private final ConcurrentLinkedDeque<Message> messageDeque;
     private final ConcurrentLinkedDeque<TransactionSignal> signalDeque;
     private Socket socket;
-    private Nametable nametable;
 
-    public SendDaemon(Socket socket, Nametable nametable) {
+    public SendDaemon(Socket socket) {
         this.socket = socket;
-        this.nametable = nametable;
         this.messageDeque = new ConcurrentLinkedDeque<>();
         this.signalDeque = new ConcurrentLinkedDeque<>();
     }

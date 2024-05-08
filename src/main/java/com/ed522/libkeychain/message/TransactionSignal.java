@@ -9,7 +9,6 @@ import java.util.Map;
 
 import com.ed522.libkeychain.err.IllegalStateError;
 import com.ed522.libkeychain.io.IOController;
-import com.ed522.libkeychain.io.MessageCodec;
 import com.ed522.libkeychain.io.MessageType;
 
 public final class TransactionSignal {
@@ -31,19 +30,19 @@ public final class TransactionSignal {
         for (Entry entry : entries) this.values.put(entry.getKey(), entry.getValue());
     }
 
-    public static TransactionSignal startTransaction(short id) {
-        return new TransactionSignal(MessageType.SIGNAL_TRANSACTION_START, new Entry("tid", id), new Entry("name", IOController.));
+    public static TransactionSignal startTransaction(short tid) {
+        return new TransactionSignal(MessageType.SIGNAL_TRANSACTION_START, new Entry("tid", tid), new Entry("name", IOController.getTransactionName(tid)));
     }
-    public static TransactionSignal endTransaction(short id) {
-        return new TransactionSignal(MessageType.SIGNAL_TRANSACTION_END, new Entry("tid", id));
+    public static TransactionSignal endTransaction(short tid) {
+        return new TransactionSignal(MessageType.SIGNAL_TRANSACTION_END, new Entry("tid", tid));
     }
 
     public static TransactionSignal parse(byte[] value) {
 
         MessageType type = MessageType.getInstance(value[0]);
 
-        if (type == MessageType.SIGNAL_TRANSACTION_START) return deserializeTransactionStart();
-        else if (type == MessageType.SIGNAL_TRANSACTION_END) return deserializeTransactionEnd();
+        if (type == MessageType.SIGNAL_TRANSACTION_START) return deserializeTransactionStart(value);
+        else if (type == MessageType.SIGNAL_TRANSACTION_END) return deserializeTransactionEnd(value);
         else throw new IllegalStateError("No appropriate serializer for type: " + type.toString());
     }
 
@@ -61,16 +60,60 @@ public final class TransactionSignal {
     private byte[] serializeTransactionStart() {
 
         // Structure: short tid, short namelen, String name
-        Object uncast = this.values.get("name");
+        Object uncastTID = this.values.get("tid");
+        Object uncastName = this.values.get("name");
 
-        if (uncast instanceof String name) {
+        if (uncastName instanceof String name && uncastTID instanceof Short tid) {
 
             byte[] strVal = name.getBytes(StandardCharsets.UTF_8);
             ByteBuffer buf = ByteBuffer.allocate(4 + strVal.length);
+            buf.putShort(tid);
             buf.putShort(exactCastToShort(strVal.length));
             buf.put(strVal);
+            return buf.array();
         
-        } else throw new IllegalStateError("Improperly initialized object; no such ")
+        } else throw new IllegalStateError("Improperly initialized object; bad property value");
+
+    }
+
+    private static TransactionSignal deserializeTransactionStart(byte[] data) {
+
+        ByteBuffer buf = ByteBuffer.wrap(data);
+        MessageType type = MessageType.SIGNAL_TRANSACTION_START;
+
+        short id = buf.getShort();
+        short namelen = buf.getShort();
+        byte[] raw = new byte[namelen];
+        buf.get(raw);
+        String name = new String(raw, StandardCharsets.UTF_8);
+
+        return new TransactionSignal(type, new Entry("tid", id), new Entry("name", name));
+
+    }
+
+    private byte[] serializeTransactionEnd() {
+
+        // Structure: short tid
+        Object uncastTID = this.values.get("tid");
+
+        if (uncastTID instanceof Short tid) {
+
+            ByteBuffer buf = ByteBuffer.allocate(2);
+            buf.putShort(tid);
+            return buf.array();
+        
+        } else throw new IllegalStateError("Improperly initialized object; bad property value");
+
+    }
+
+    private static TransactionSignal deserializeTransactionEnd(byte[] data) {
+
+        ByteBuffer buf = ByteBuffer.wrap(data);
+        MessageType type = MessageType.SIGNAL_TRANSACTION_START;
+
+        short id = buf.getShort();
+
+        return new TransactionSignal(type, new Entry("tid", id));
 
     }
 

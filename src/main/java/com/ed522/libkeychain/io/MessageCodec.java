@@ -53,6 +53,7 @@ public class MessageCodec {
         DataOutputStream out = new DataOutputStream(stream);
 
         out.write(MessageType.MESSAGE.getTypeByte());
+        out.writeShort(message.getTransactionNumber());
         // group name
         out.writeInt(message.getGroup().length());
         out.writeBytes(message.getGroup());
