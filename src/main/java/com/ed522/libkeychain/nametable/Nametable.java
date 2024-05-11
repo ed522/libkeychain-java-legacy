@@ -3,7 +3,8 @@ package com.ed522.libkeychain.nametable;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ed522.libkeychain.nametable.transactions.TransactionReference;
+import com.ed522.libkeychain.message.MessageEntry;
+import com.ed522.libkeychain.transaction.TransactionReference;
 
 public class Nametable {
     

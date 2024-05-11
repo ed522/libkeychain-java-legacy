@@ -9,10 +9,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ed522.libkeychain.err.InvalidProofException;
 import com.ed522.libkeychain.io.MessageCodec;
-import com.ed522.libkeychain.io.MessageType;
-import com.ed522.libkeychain.nametable.FieldEntry;
-import com.ed522.libkeychain.nametable.MessageEntry;
 
 public class Message {
     
@@ -117,7 +115,28 @@ public class Message {
     }
 
     public void calculateProof(int factor) throws IOException, NoSuchAlgorithmException {
+        proof = ProofCalculator.calculate(this.serializeWithoutProof(), factor);
+    }
+    public void verifyProof(int factor) throws InvalidProofException, NoSuchAlgorithmException, IOException {
+        if (!ProofCalculator.verify(this.serializeWithoutProof(), this.getProof(), factor))
+            throw new InvalidProofException();
+    }
 
+    public byte[] getProof() {
+        return this.proof.clone();
+    }
+
+    public void serializeToStream(OutputStream out) throws IOException {
+        MessageCodec.serialize(this, out);
+    }
+    public short getTransactionNumber() {
+        return this.transactionNumber;
+    }
+    public String getAssociatedTransaction() {
+        return this.associatedTransaction;
+    }
+
+    public byte[] serializeWithoutProof() throws IOException {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(result);
 
@@ -138,26 +157,7 @@ public class Message {
             out.write(fields.get(i).getType());
             out.write(fields.get(i).getByteValue());
         }
-
-        proof = ProofCalculator.calculate(result.toByteArray(), factor);
-
-    }
-    public void verifyProof(int factor) {
-        // TODO implement proofs
-    }
-
-    public byte[] getProof() {
-        return this.proof.clone();
-    }
-
-    public void serializeToStream(OutputStream out) throws IOException {
-        MessageCodec.serialize(this, out);
-    }
-    public short getTransactionNumber() {
-        return this.transactionNumber;
-    }
-    public String getAssociatedTransaction() {
-        return this.associatedTransaction;
+        return result.toByteArray();
     }
 
 

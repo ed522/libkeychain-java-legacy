@@ -40,7 +40,7 @@ import org.junit.Test;
 import com.ed522.libkeychain.stores.keystore.Keystore;
 import com.ed522.libkeychain.stores.keystore.KeystoreEntry;
 import com.ed522.libkeychain.util.Logger;
-import com.ed522.libkeychain.util.StandardAlgorithms;
+import com.ed522.libkeychain.util.Constants;
 import com.ed522.libkeychain.util.Logger.Level;
 import com.ed522.libkeychain.util.Logger.LoggerOutputStream;
 
@@ -131,13 +131,13 @@ public class KeystoreTest {
         file = new File("testkeystore.lks");
         file.createNewFile();
         
-        KeyPairGenerator aGen = KeyPairGenerator.getInstance(StandardAlgorithms.ASYMMETRIC_CIPHER);
-        aGen.initialize(new ECGenParameterSpec(StandardAlgorithms.ASYMMETRIC_CURVE_NAME));
+        KeyPairGenerator aGen = KeyPairGenerator.getInstance(Constants.ASYMMETRIC_CIPHER);
+        aGen.initialize(new ECGenParameterSpec(Constants.ASYMMETRIC_CURVE_NAME));
         this.firstPair = aGen.genKeyPair();
         this.thirdPair = aGen.genKeyPair();
         this.fourthPair = aGen.genKeyPair();
 
-        KeyGenerator sGen = KeyGenerator.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
+        KeyGenerator sGen = KeyGenerator.getInstance(Constants.SYMMETRIC_CIPHER);
         sGen.init(256);
         this.firstSecret = sGen.generateKey();
         this.secondSecret = sGen.generateKey();

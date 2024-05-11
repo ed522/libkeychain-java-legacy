@@ -5,10 +5,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
-import com.ed522.libkeychain.nametable.FieldEntry;
-
 public class Field {
 
+	private static final String MESSAGE_UNINITIALIZED = "This object has not been properly initialized";
 	private static final String BAD_DATATYPE_ERRNO = "This data type is not appropriate for this field";
 
 	private final FieldEntry entry;
@@ -195,6 +194,10 @@ public class Field {
 	public byte getType() {
 		return entry.getType();
 	}
+
+	public void setByteValue(byte[] val) {
+		this.byteVal = val;
+	}
 	/*
 	 * The following methods set the values for all of the datatypes.
 	 * They provide a simple and checked way of setting the value.
@@ -306,42 +309,52 @@ public class Field {
 	// primitives
 	public byte getU8() {
 		if (this.entry.getType() != FieldEntry.TYPE_U8) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return byteVal[0];
 	}
 	public short getU16() {
 		if (this.entry.getType() != FieldEntry.TYPE_U16) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Short.BYTES).put(0, byteVal).getShort();
 	}
 	public int getU32() {
 		if (this.entry.getType() != FieldEntry.TYPE_U32) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Integer.BYTES).put(0, byteVal).getInt();
 	}
 	public long getU64() {
 		if (this.entry.getType() != FieldEntry.TYPE_U64) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Long.BYTES).put(0, byteVal).getLong();
 	}
 	public byte getI8() {
 		if (this.entry.getType() != FieldEntry.TYPE_I8) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return byteVal[0];
 	}
 	public short getI16() {
 		if (this.entry.getType() != FieldEntry.TYPE_I16) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Short.BYTES).put(0, byteVal).getShort();
 	}
 	public int getI32() {
 		if (this.entry.getType() != FieldEntry.TYPE_I32) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Integer.BYTES).put(0, byteVal).getInt();
 	}
 	public long getI64() {
 		if (this.entry.getType() != FieldEntry.TYPE_I64) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Long.BYTES).put(0, byteVal).getLong();
 	}
 	public float getF32() {
 		if (this.entry.getType() != FieldEntry.TYPE_F32) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Float.BYTES).put(0, byteVal).getFloat();
 	}
 	public double getF64() {
 		if (this.entry.getType() != FieldEntry.TYPE_F64) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return ByteBuffer.allocate(Double.BYTES).put(0, byteVal).getDouble();
 	}
 	public byte[] getBytes() {
@@ -350,55 +363,68 @@ public class Field {
 	}
 	public String getString() {
 		if (this.entry.getType() != FieldEntry.TYPE_BINARY) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return new String(parseArray8(byteVal), StandardCharsets.UTF_8);
 	}
 	// array types
 	public byte[] getU8Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_U8) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray8(byteVal);
 	}
 	public short[] getU16Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_U16) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray16(byteVal);
 	}
 	public int[] getU32Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_U32) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray32(byteVal);
 	}
 	public long[] getU64Array( /* unsigned */) {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_U64) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray64(byteVal);
 	}
 	public byte[] getI8Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_I8) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray8(byteVal);
 	}
 	public short[] getI16Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_I16) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray16(byteVal);
 	}
 	public int[] getI32Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_I32) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray32(byteVal);
 	}
 	public long[] getI64Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_I64) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArray64(byteVal);
 	}
 	public float[] getF32Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_F32) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArrayF32(byteVal);
 	}
 	public double[] getF64Array() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_F64) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArrayF64(byteVal);
 	}
 	public byte[][] getBytesArray() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_BINARY) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArrayByte2D(byteVal);
 	}
 	public String[] getStringArray() {
 		if (this.entry.getType() != FieldEntry.TYPE_ARRAY_BINARY) throw new UnsupportedOperationException(BAD_DATATYPE_ERRNO);
+		if (this.byteVal.length == 0) throw new IllegalStateException(MESSAGE_UNINITIALIZED);
 		return parseArrayString(byteVal);
 	}
 

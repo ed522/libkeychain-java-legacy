@@ -1,23 +1,23 @@
 package com.ed522.libkeychain.transaction;
 
-import com.ed522.libkeychain.nametable.transactions.TransactionReference;
-import com.ed522.libkeychain.transaction.backend.TransactionController;
-
 public abstract class Transaction {
     
     protected TransactionReference ref;
 
-    protected abstract void startTransactionImpl(TransactionController controller);
+    protected abstract void clientStartTransactionImpl(ClientTransactionController controller);
+    protected abstract void serverStartTransactionImpl(ServerTransactionController controller);
 
     protected Transaction(TransactionReference ref) {
         this.ref = ref;
     }
 
-    public void start(TransactionController controller) {
-
-        Thread thread = new Thread(() -> this.startTransactionImpl(controller));
+    public void startClient(ClientTransactionController controller) {
+        Thread thread = new Thread(() -> this.clientStartTransactionImpl(controller));
         thread.start();
-
+    }
+    public void startServer(ServerTransactionController controller) {
+        Thread thread = new Thread(() -> this.serverStartTransactionImpl(controller));
+        thread.start();
     }
 
 }

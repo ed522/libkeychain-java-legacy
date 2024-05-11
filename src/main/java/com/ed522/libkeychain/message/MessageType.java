@@ -1,4 +1,4 @@
-package com.ed522.libkeychain.io;
+package com.ed522.libkeychain.message;
 
 import java.util.HexFormat;
 
@@ -6,7 +6,7 @@ public enum MessageType {
 	
 	SIGNAL_TRANSACTION_START((byte) 0x00),
 	SIGNAL_TRANSACTION_END((byte) 0x01),
-	MESSAGE((byte) 0xFF);
+	MESSAGE((byte) 0x00);
 
 	private final byte typeByte;
 	public byte getTypeByte() {

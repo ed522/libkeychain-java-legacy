@@ -9,7 +9,6 @@ import java.util.Map;
 
 import com.ed522.libkeychain.err.IllegalStateError;
 import com.ed522.libkeychain.io.IOController;
-import com.ed522.libkeychain.io.MessageType;
 
 public final class TransactionSignal {
 

@@ -19,8 +19,10 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.ed522.libkeychain.err.TooMuchDataException;
+import com.ed522.libkeychain.message.FieldEntry;
 import com.ed522.libkeychain.message.Message;
-import com.ed522.libkeychain.nametable.transactions.TransactionReference;
+import com.ed522.libkeychain.message.MessageEntry;
+import com.ed522.libkeychain.transaction.TransactionReference;
 
 public class NametableParser {
 

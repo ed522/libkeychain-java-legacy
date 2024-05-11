@@ -5,7 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.function.Function;
 
-import com.ed522.libkeychain.util.StandardAlgorithms;
+import com.ed522.libkeychain.util.Constants;
 
 public class ProofJob extends Thread {
 
@@ -43,7 +43,7 @@ public class ProofJob extends Thread {
 
 		try {
 			
-			MessageDigest digest = MessageDigest.getInstance(StandardAlgorithms.HASH_NAME);
+			MessageDigest digest = MessageDigest.getInstance(Constants.HASH_NAME);
 			for (BigInteger i = start; i.compareTo(end) < 1; i = i.add(BigInteger.ONE)) {
 			
 				if (this.stopped)

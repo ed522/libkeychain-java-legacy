@@ -1,12 +1,11 @@
-package com.ed522.libkeychain.nametable.transactions;
+package com.ed522.libkeychain.transaction;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import com.ed522.libkeychain.transaction.Transaction;
-import com.ed522.libkeychain.transaction.backend.TransactionController;
+import com.ed522.libkeychain.Initializer;
 
 public class TransactionReference {
 
@@ -22,14 +21,16 @@ public class TransactionReference {
 	private final Constructor<?> constructor;
 
 	private final Class<?> type;
-	private final Method method;
+	private final Method clientMethod;
+	private final Method serverMethod;
 	private final String name;
 
 	public TransactionReference(Class<?> type, String name, boolean initialize) throws ReflectiveOperationException {
 		
 		this.type = type;
 		if (!type.isAssignableFrom(Transaction.class)) throw new IllegalArgumentException("The type given does not extend Transaction");
-		this.method = type.getMethod("start", TransactionController.class);
+		this.clientMethod = type.getMethod("startClient", ClientTransactionController.class);
+		this.serverMethod = type.getMethod("startServer", ServerTransactionController.class);
 		this.name = name;
 
 		// The following conditions must be satisfied:
@@ -56,9 +57,7 @@ public class TransactionReference {
 			if (m != null) {
 				InstanceRegistry.add(m.invoke(null));
 			} else {
-
 				Constructor<?> c = getSuitableConstructor(type);
-
 				if (!c.isAnnotationPresent(Initializer.class) || !c.canAccess(null)) {
 					throw new NoSuchMethodException("Out of available options to initialize reference for registry (does it have the @Initializer annotation?)"); // new exception
 				}
@@ -122,14 +121,25 @@ public class TransactionReference {
 
 	}
 
-	public void invokeMethod(TransactionController controller) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+	public void invokeMethod(ClientTransactionController controller) throws IllegalAccessException, InvocationTargetException, InstantiationException {
 
 		if (mode.equals(AccessMode.INSTANCE_REGISTRY)) {
-			method.invoke(InstanceRegistry.get(type), controller);
+			clientMethod.invoke(InstanceRegistry.get(type), controller);
 		} else if (mode.equals(AccessMode.INSTANCE_INITIALIZER)) {
-			method.invoke(creator.invoke(null), controller);
+			clientMethod.invoke(creator.invoke(null), controller);
 		} else if (mode.equals(AccessMode.INSTANCE_CONSTRUCTOR)) {
-			method.invoke(constructor.newInstance(), controller);
+			clientMethod.invoke(constructor.newInstance(), controller);
+		}
+
+	}
+	public void invokeMethod(ServerTransactionController controller) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+		
+		if (mode.equals(AccessMode.INSTANCE_REGISTRY)) {
+			serverMethod.invoke(InstanceRegistry.get(type), controller);
+		} else if (mode.equals(AccessMode.INSTANCE_INITIALIZER)) {
+			serverMethod.invoke(creator.invoke(null), controller);
+		} else if (mode.equals(AccessMode.INSTANCE_CONSTRUCTOR)) {
+			serverMethod.invoke(constructor.newInstance(), controller);
 		}
 
 	}

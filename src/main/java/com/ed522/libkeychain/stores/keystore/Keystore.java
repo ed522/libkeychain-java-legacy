@@ -29,7 +29,7 @@ import org.bouncycastle.util.Arrays;
 
 import com.ed522.libkeychain.stores.ChunkParser;
 import com.ed522.libkeychain.stores.ObservableArrayList;
-import com.ed522.libkeychain.util.StandardAlgorithms;
+import com.ed522.libkeychain.util.Constants;
 
 public class Keystore implements Closeable, Destroyable {
 
@@ -89,8 +89,8 @@ public class Keystore implements Closeable, Destroyable {
         new SecureRandom().nextBytes(saltToSet);
         file.write(saltToSet);
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, Constants.PBKDF2_ITERATIONS, 256));
         
         // chunked
         ChunkParser parser = new ChunkParser(masterKey);
@@ -107,8 +107,8 @@ public class Keystore implements Closeable, Destroyable {
         new SecureRandom().nextBytes(saltToSet);
         out.write(saltToSet);
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), saltToSet, Constants.PBKDF2_ITERATIONS, 256));
         
         // chunked
         ChunkParser parser = new ChunkParser(masterKey);
@@ -130,8 +130,8 @@ public class Keystore implements Closeable, Destroyable {
         if (masterSaltToSet.length != 32) throw new IllegalArgumentException("Bad salt length (needs to be 32)");
         file.read(masterSaltToSet); // 32 bytes
 
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSaltToSet, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSaltToSet, Constants.PBKDF2_ITERATIONS, 256));
 
         // read first chunk
         ChunkParser parser = new ChunkParser(masterKey);
@@ -193,8 +193,8 @@ public class Keystore implements Closeable, Destroyable {
             entries.addAllUnchecked(readFile(raf, password, masterSalt));
         }
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSalt, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), masterSalt, Constants.PBKDF2_ITERATIONS, 256));
 
     }
 
@@ -235,8 +235,8 @@ public class Keystore implements Closeable, Destroyable {
             stream.write(e.encode());
         }
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, Constants.PBKDF2_ITERATIONS, 256));
 
     }
 
@@ -351,6 +351,16 @@ public class Keystore implements Closeable, Destroyable {
             KeystoreEntry e = entries.get(i);
             if (e.getName().equals(name) && e.getType().equals(type)) entries.remove(i);
         }
+    }
+
+    public boolean hasPrivate(String name) {
+        return this.getPrivate(name) == null;
+    }
+    public boolean hasCertificate(String name) {
+        return this.getCertificate(name) == null;
+    }
+    public boolean hasSecret(String name) {
+        return this.getSecret(name) == null;
     }
 
     @Override

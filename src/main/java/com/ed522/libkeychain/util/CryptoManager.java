@@ -39,7 +39,6 @@ import java.security.spec.ECPrivateKeySpec;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
@@ -115,8 +114,8 @@ public class CryptoManager {
      */
     public CryptoManager(PrivateKey priv, Certificate cert, SecretKey secret) throws GeneralSecurityException {
 
-        if (priv != null && !priv.getAlgorithm().equals(StandardAlgorithms.ASYMMETRIC_CIPHER)) throw new InvalidKeyException("Must be EC Ed448 key");
-        if (cert != null && !cert.getPublicKey().getAlgorithm().equals(StandardAlgorithms.ASYMMETRIC_CIPHER)) throw new InvalidKeyException("Must be EC Ed448 key");
+        if (priv != null && !priv.getAlgorithm().equals(Constants.ASYMMETRIC_CIPHER)) throw new InvalidKeyException("Must be EC Ed448 key");
+        if (cert != null && !cert.getPublicKey().getAlgorithm().equals(Constants.ASYMMETRIC_CIPHER)) throw new InvalidKeyException("Must be EC Ed448 key");
 
         if (cert != null) {
         
@@ -149,12 +148,12 @@ public class CryptoManager {
 
     public CryptoManager(String name) throws NoSuchAlgorithmException, InvalidKeySpecException, CertificateException, IOException, OperatorCreationException, InvalidAlgorithmParameterException {
 
-        KeyPairGenerator aGen = KeyPairGenerator.getInstance(StandardAlgorithms.ASYMMETRIC_CIPHER);
-        aGen.initialize(new ECGenParameterSpec(StandardAlgorithms.ASYMMETRIC_CURVE_NAME));
+        KeyPairGenerator aGen = KeyPairGenerator.getInstance(Constants.ASYMMETRIC_CIPHER);
+        aGen.initialize(new ECGenParameterSpec(Constants.ASYMMETRIC_CURVE_NAME));
         this.keys = aGen.generateKeyPair();
 
-        KeyGenerator symGen = KeyGenerator.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
-        symGen.init(StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES);
+        KeyGenerator symGen = KeyGenerator.getInstance(Constants.SYMMETRIC_CIPHER);
+        symGen.init(Constants.SYMMETRIC_KEY_LENGTH_BYTES);
         this.secret = symGen.generateKey();
 
         X509v3CertificateBuilder builder = new X509v3CertificateBuilder(
@@ -165,24 +164,20 @@ public class CryptoManager {
             // Not before (now)
             Date.from(Instant.now()),
             // Not after (n days)
-            Date.from(Instant.now().plus(365, ChronoUnit.DAYS)),
+            Date.from(Constants.CERT_EXPIRY_INSTANT),
             // Locale (default)
             Locale.getDefault(),
             // X500 name of subject
             new X500Name("cn=" + name),
             // Public key info
             new SubjectPublicKeyInfo(
-                // ecdsa-with-sha256
-                // RFC 7427
-                new AlgorithmIdentifier(new ASN1ObjectIdentifier(StandardAlgorithms.SIGNATURE_ALGORITHM_ASN1_OID)),
+                new AlgorithmIdentifier(new ASN1ObjectIdentifier(Constants.SIGNATURE_ALGORITHM_ASN1_OID)),
                 keys.getPublic().getEncoded()
             )
         );
         // Self-sign cert
-        X509CertificateHolder holder = builder.build(new JcaContentSignerBuilder(StandardAlgorithms.SIGNATURE_ALGORITHM).build(keys.getPrivate()));
+        X509CertificateHolder holder = builder.build(new JcaContentSignerBuilder(Constants.SIGNATURE_ALGORITHM).build(keys.getPrivate()));
         // Get the cert by using a CertificateFactory on the holder's getEncoded() method
-        // Needs to use a ByteArrayInputStream because generateCertificate() needs an
-        // InputStream for some bizzare reason
         cert = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(holder.getEncoded()));
 
         this.pkSpec = KeyFactory.getInstance(keys.getPublic().getAlgorithm()).getKeySpec(keys.getPublic(), ECPublicKeySpec.class);
@@ -232,14 +227,14 @@ public class CryptoManager {
         this.cert = cert;
         this.keys = new KeyPair(cert.getPublicKey(), priv);
 
-        this.pkSpec = KeyFactory.getInstance(StandardAlgorithms.ASYMMETRIC_CIPHER).getKeySpec(cert.getPublicKey(), ECPublicKeySpec.class);
-        this.skSpec = KeyFactory.getInstance(StandardAlgorithms.ASYMMETRIC_CIPHER).getKeySpec(priv, ECPrivateKeySpec.class);
+        this.pkSpec = KeyFactory.getInstance(Constants.ASYMMETRIC_CIPHER).getKeySpec(cert.getPublicKey(), ECPublicKeySpec.class);
+        this.skSpec = KeyFactory.getInstance(Constants.ASYMMETRIC_CIPHER).getKeySpec(priv, ECPrivateKeySpec.class);
 
     }
 
     public byte[] sign(byte[] message) throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
 
-        Signature sign = Signature.getInstance(StandardAlgorithms.SIGNATURE_ALGORITHM);
+        Signature sign = Signature.getInstance(Constants.SIGNATURE_ALGORITHM);
         sign.initSign(keys.getPrivate());
         sign.update(message);
         return sign.sign();
@@ -254,7 +249,7 @@ public class CryptoManager {
 
     public boolean verifyUsingKey(byte[] message, byte[] signature, PublicKey key) throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
 
-        Signature verify = Signature.getInstance(StandardAlgorithms.SIGNATURE_ALGORITHM);
+        Signature verify = Signature.getInstance(Constants.SIGNATURE_ALGORITHM);
         verify.initVerify(key);
         verify.update(message);
         return verify.verify(signature);
@@ -265,7 +260,7 @@ public class CryptoManager {
 
         Objects.requireNonNull(this.secret, ERR_SECRET_NULL);
         
-        Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_TRANSFORMATION);
+        Cipher cipher = Cipher.getInstance(Constants.SYMMETRIC_TRANSFORMATION);
         cipher.init(Cipher.ENCRYPT_MODE, secret, new IvParameterSpec(iv));
         return cipher.doFinal(message);
 
@@ -273,15 +268,15 @@ public class CryptoManager {
 
     public byte[] encryptAsym(byte[] message, byte[] iv) throws GeneralSecurityException {
 
-        KeyGenerator generator = KeyGenerator.getInstance(StandardAlgorithms.SYMMETRIC_CIPHER);
-        generator.init(StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BITS);
+        KeyGenerator generator = KeyGenerator.getInstance(Constants.SYMMETRIC_CIPHER);
+        generator.init(Constants.SYMMETRIC_KEY_LENGTH_BITS);
 
         SecretKey messageSecret = generator.generateKey();
 
-        Cipher wrapper = Cipher.getInstance(StandardAlgorithms.ASYMMETRIC_WRAP);
+        Cipher wrapper = Cipher.getInstance(Constants.ASYMMETRIC_WRAP);
         wrapper.init(Cipher.WRAP_MODE, this.getCert().getPublicKey());
 
-        Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_TRANSFORMATION);
+        Cipher cipher = Cipher.getInstance(Constants.SYMMETRIC_TRANSFORMATION);
         cipher.init(Cipher.ENCRYPT_MODE, messageSecret, new IvParameterSpec(iv));
         return Arrays.concatenate(wrapper.wrap(messageSecret), cipher.doFinal(message));
 
@@ -292,7 +287,7 @@ public class CryptoManager {
         Logger.getDefault().logFormatted(Level.TRACE, "Decrypt, IV = ${0}, message = ${1}", LOGGER_NAME, Base64Coder.byteToB64(iv), Base64Coder.byteToB64(message));
         Objects.requireNonNull(this.secret, ERR_SECRET_NULL);
         
-        Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_TRANSFORMATION);
+        Cipher cipher = Cipher.getInstance(Constants.SYMMETRIC_TRANSFORMATION);
         cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(iv));
         return cipher.doFinal(message);
 
@@ -300,11 +295,11 @@ public class CryptoManager {
 
     public byte[] decryptAsym(byte[] message, byte[] iv) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 
-        Key messageSecret = this.unwrapAsym(Arrays.copyOfRange(message, 0, 32), Cipher.SECRET_KEY, StandardAlgorithms.SYMMETRIC_CIPHER);
+        Key messageSecret = this.unwrapAsym(Arrays.copyOfRange(message, 0, 32), Cipher.SECRET_KEY, Constants.SYMMETRIC_CIPHER);
 
-        Cipher cipher = Cipher.getInstance(StandardAlgorithms.SYMMETRIC_TRANSFORMATION); // NOSONAR: Insecure padding (it's a stream cipher ffs)
+        Cipher cipher = Cipher.getInstance(Constants.SYMMETRIC_TRANSFORMATION); // NOSONAR: Insecure padding (it's a stream cipher ffs)
         cipher.init(Cipher.DECRYPT_MODE, messageSecret, new IvParameterSpec(iv));
-        return cipher.doFinal(Arrays.copyOfRange(message, StandardAlgorithms.SYMMETRIC_KEY_LENGTH_BYTES, message.length));
+        return cipher.doFinal(Arrays.copyOfRange(message, Constants.SYMMETRIC_KEY_LENGTH_BYTES, message.length));
 
     }
 
@@ -326,7 +321,7 @@ public class CryptoManager {
 
     public Key unwrapAsym(byte[] wrappedKey, int type, String algorithm) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
 
-        Cipher unwrapper = Cipher.getInstance(StandardAlgorithms.ASYMMETRIC_WRAP);
+        Cipher unwrapper = Cipher.getInstance(Constants.ASYMMETRIC_WRAP);
         unwrapper.init(Cipher.UNWRAP_MODE, this.getKeys().getPrivate());
         return unwrapper.unwrap(wrappedKey, algorithm, type);
 

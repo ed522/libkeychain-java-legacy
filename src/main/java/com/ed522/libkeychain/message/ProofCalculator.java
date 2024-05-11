@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 import com.ed522.libkeychain.err.IllegalStateError;
 import com.ed522.libkeychain.util.Base64Coder;
-import com.ed522.libkeychain.util.StandardAlgorithms;
+import com.ed522.libkeychain.util.Constants;
 
 public class ProofCalculator {
 
@@ -17,7 +17,7 @@ public class ProofCalculator {
 		THREADS = Runtime.getRuntime().availableProcessors(); // includes virt cores
 
 		// calculate start and end
-		byte[] buf = new byte[StandardAlgorithms.HASH_LENGTH_BYTES];
+		byte[] buf = new byte[Constants.HASH_LENGTH_BYTES];
 		Arrays.fill(buf, (byte) 0xFF);
 		BigInteger globalEnd = new BigInteger(buf);
 
@@ -32,7 +32,7 @@ public class ProofCalculator {
 	public static final byte[] calculate(byte[] message, int factor) throws NoSuchAlgorithmException {
 
 		ProofJob[] jobs = new ProofJob[THREADS];
-		byte[] proof = new byte[StandardAlgorithms.HASH_LENGTH_BYTES];		
+		byte[] proof = new byte[Constants.HASH_LENGTH_BYTES];		
 		for (int i = 0; i < jobs.length; i++) {
 
 			jobs[i] = new ProofJob((byte[] result) -> {
@@ -59,7 +59,7 @@ public class ProofCalculator {
 	}
 
 	public static final boolean verify(byte[] message, byte[] proof, int factor) throws NoSuchAlgorithmException {
-		return new ProofJob(null, message, factor, new byte[1], new byte[1]).test(proof, MessageDigest.getInstance(StandardAlgorithms.HASH_NAME));
+		return new ProofJob(null, message, factor, new byte[1], new byte[1]).test(proof, MessageDigest.getInstance(Constants.HASH_NAME));
 	}
 
 }

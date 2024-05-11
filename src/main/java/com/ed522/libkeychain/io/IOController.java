@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.ed522.libkeychain.message.Message;
 import com.ed522.libkeychain.nametable.Nametable;
-import com.ed522.libkeychain.nametable.transactions.TransactionReference;
-import com.ed522.libkeychain.transaction.backend.TransactionController;
+import com.ed522.libkeychain.transaction.ClientTransactionController;
+import com.ed522.libkeychain.transaction.TransactionReference;
 
 public class IOController {
     
@@ -53,7 +53,7 @@ public class IOController {
         return receiver.read(transactionNumber);
     }
 
-    public void startTransaction(String transactionName) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+    public void clientStartTransaction(String transactionName) throws IllegalAccessException, InvocationTargetException, InstantiationException {
 
         TransactionReference ref = nametable.getTransaction(transactionName);
         short id = 0;
@@ -64,7 +64,7 @@ public class IOController {
 
         ongoingTransactions.put(transactionName, ++id);
 
-        TransactionController controller = new TransactionController(this, ref, id);
+        ClientTransactionController controller = new ClientTransactionController(this, ref, id);
         ref.invokeMethod(controller);
 
     }

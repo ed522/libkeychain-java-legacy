@@ -1,4 +1,4 @@
-package com.ed522.libkeychain.nametable.transactions;
+package com.ed522.libkeychain.transaction;
 
 import java.util.ArrayList;
 import java.util.List;

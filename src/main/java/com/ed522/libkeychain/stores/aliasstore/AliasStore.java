@@ -30,7 +30,7 @@ import org.bouncycastle.util.Arrays;
 import com.ed522.libkeychain.stores.ChunkParser;
 import com.ed522.libkeychain.stores.ObservableArrayList;
 import com.ed522.libkeychain.stores.keystore.Keystore;
-import com.ed522.libkeychain.util.StandardAlgorithms;
+import com.ed522.libkeychain.util.Constants;
 
 public class AliasStore implements Closeable, Destroyable {
 
@@ -89,8 +89,8 @@ public class AliasStore implements Closeable, Destroyable {
         new SecureRandom().nextBytes(salt);
         file.write(salt);
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, Constants.PBKDF2_ITERATIONS, 256));
         System.arraycopy(masterKey.getEncoded(), 0, keyBytesToSet, 0, 32);
 
         // chunked
@@ -110,8 +110,8 @@ public class AliasStore implements Closeable, Destroyable {
         new SecureRandom().nextBytes(salt);
         out.write(salt);
         
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, Constants.PBKDF2_ITERATIONS, 256));
         System.arraycopy(masterKey.getEncoded(), 0, keyBytesToSet, 0, 32);
         
         // chunked
@@ -134,8 +134,8 @@ public class AliasStore implements Closeable, Destroyable {
         byte[] salt = new byte[32];
         file.read(salt);
 
-        SecretKeyFactory factory = SecretKeyFactory.getInstance(StandardAlgorithms.PBKDF_MODE);
-        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, StandardAlgorithms.PBKDF2_ITERATIONS, 256));
+        SecretKeyFactory factory = SecretKeyFactory.getInstance(Constants.PBKDF_MODE);
+        SecretKey masterKey = factory.generateSecret(new PBEKeySpec(password.toCharArray(), salt, Constants.PBKDF2_ITERATIONS, 256));
         System.arraycopy(masterKey.getEncoded(), 0, keyBytesToSet, 0, 32);
 
         // read first chunk

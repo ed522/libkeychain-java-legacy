@@ -1,8 +1,10 @@
-package com.ed522.libkeychain.nametable;
+package com.ed522.libkeychain.message;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.ed522.libkeychain.io.IOController;
 
 public class MessageEntry {
 
@@ -69,5 +71,12 @@ public class MessageEntry {
 		}
 	}
 
+	public Message newInstance(short transaction) {
+		
+		Message message = new Message(this, IOController.getTransactionName(transaction));
+		for (FieldEntry entry : fields) message.addNewField(new Field(entry));
+		return message;
+
+	}
 	
 }
