@@ -39,6 +39,7 @@ import java.security.spec.ECPrivateKeySpec;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
@@ -156,29 +157,7 @@ public class CryptoManager {
         symGen.init(Constants.SYMMETRIC_KEY_LENGTH_BYTES);
         this.secret = symGen.generateKey();
 
-        X509v3CertificateBuilder builder = new X509v3CertificateBuilder(
-            // X500 name of issuer
-            new X500Name("cn=" + name),
-            // Serial number of cert
-            BigInteger.ZERO,
-            // Not before (now)
-            Date.from(Instant.now()),
-            // Not after (n days)
-            Date.from(Constants.CERT_EXPIRY_INSTANT),
-            // Locale (default)
-            Locale.getDefault(),
-            // X500 name of subject
-            new X500Name("cn=" + name),
-            // Public key info
-            new SubjectPublicKeyInfo(
-                new AlgorithmIdentifier(new ASN1ObjectIdentifier(Constants.SIGNATURE_ALGORITHM_ASN1_OID)),
-                keys.getPublic().getEncoded()
-            )
-        );
-        // Self-sign cert
-        X509CertificateHolder holder = builder.build(new JcaContentSignerBuilder(Constants.SIGNATURE_ALGORITHM).build(keys.getPrivate()));
-        // Get the cert by using a CertificateFactory on the holder's getEncoded() method
-        cert = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(holder.getEncoded()));
+        this.generateCertificate(name);
 
         this.pkSpec = KeyFactory.getInstance(keys.getPublic().getAlgorithm()).getKeySpec(keys.getPublic(), ECPublicKeySpec.class);
         this.skSpec = KeyFactory.getInstance(keys.getPrivate().getAlgorithm()).getKeySpec(keys.getPrivate(), ECPrivateKeySpec.class);
@@ -229,6 +208,34 @@ public class CryptoManager {
 
         this.pkSpec = KeyFactory.getInstance(Constants.ASYMMETRIC_CIPHER).getKeySpec(cert.getPublicKey(), ECPublicKeySpec.class);
         this.skSpec = KeyFactory.getInstance(Constants.ASYMMETRIC_CIPHER).getKeySpec(priv, ECPrivateKeySpec.class);
+
+    }
+
+    public void generateCertificate(String name) throws OperatorCreationException, CertificateException, IOException {
+
+        X509v3CertificateBuilder builder = new X509v3CertificateBuilder(
+            // X500 name of issuer
+            new X500Name("cn=" + name),
+            // Serial number of cert
+            BigInteger.ZERO,
+            // Not before (now)
+            Date.from(Instant.now()),
+            // Not after (n days)
+            Date.from(Instant.now().plus(365, ChronoUnit.DAYS)),
+            // Locale (default)
+            Locale.getDefault(),
+            // X500 name of subject
+            new X500Name("cn=" + name),
+            // Public key info
+            new SubjectPublicKeyInfo(
+                new AlgorithmIdentifier(new ASN1ObjectIdentifier(Constants.SIGNATURE_ALGORITHM_ASN1_OID)),
+                keys.getPublic().getEncoded()
+            )
+        );
+        // Self-sign cert
+        X509CertificateHolder holder = builder.build(new JcaContentSignerBuilder(Constants.SIGNATURE_ALGORITHM).build(keys.getPrivate()));
+        // Get the cert by using a CertificateFactory on the holder's getEncoded() method
+        cert = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(holder.getEncoded()));
 
     }
 

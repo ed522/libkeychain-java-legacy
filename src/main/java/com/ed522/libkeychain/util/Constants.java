@@ -12,8 +12,6 @@ public class Constants {
     public static final int SYMMETRIC_KEY_LENGTH_BITS = 256;
     public static final int HASH_LENGTH_BYTES = 32;
     
-    public static final Instant CERT_EXPIRY_INSTANT = Instant.EPOCH.plus(2930585, ChronoUnit.DAYS); // Year 9999
-    
     public static final String HASH_NAME = "SHA3-256";
     public static final String PBKDF_MODE = "PBKDF2WithHmacSHA256";
     public static final String SIGNATURE_ALGORITHM = "Ed448";

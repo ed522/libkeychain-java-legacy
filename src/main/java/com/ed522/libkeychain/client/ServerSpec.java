@@ -18,7 +18,7 @@ public class ServerSpec {
 	 * Structure:
 	 * File
 	 * 	PARAMS: 1B 			// Parameters and miscellenia (reserved for future use)
-	 * 	IP: 16B				// IP addresses are 4 bytes
+	 * 	IP: 4B				// IP addresses are 4 bytes
 	 * 	CERTLEN: 4B
 	 * 	CERT: <CERTLEN>B 	// Certificate built in, CERTLEN bytes long
 	 */

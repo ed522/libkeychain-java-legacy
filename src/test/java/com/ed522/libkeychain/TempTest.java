@@ -8,6 +8,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
 
@@ -37,7 +38,7 @@ public class TempTest {
             // Not before (now)
             Date.from(Instant.now()),
             // Not after (max GeneralizedDate)
-            Date.from(Constants.CERT_EXPIRY_INSTANT),
+            Date.from(Instant.now().plus(Constants.CERT_EXPIRY_DAYS, ChronoUnit.DAYS)),
             // Locale (default)
             Locale.getDefault(),
             // X500 name of subject

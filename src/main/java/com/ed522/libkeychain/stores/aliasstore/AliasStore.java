@@ -341,6 +341,10 @@ public class AliasStore implements Closeable, Destroyable {
         return null;
     }
 
+    public boolean hasEntry(String name) {
+        return getCertificateEntry(name) == null;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (closed) throw new IllegalStateException(ALREADY_CLOSED_MESSAGE);

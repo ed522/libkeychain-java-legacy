@@ -6,6 +6,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import com.ed522.libkeychain.Initializer;
+import com.ed522.libkeychain.io.ClientTransactionController;
+import com.ed522.libkeychain.io.ClientTransactionController;
 
 public class TransactionReference {
 
@@ -30,7 +32,7 @@ public class TransactionReference {
 		this.type = type;
 		if (!type.isAssignableFrom(Transaction.class)) throw new IllegalArgumentException("The type given does not extend Transaction");
 		this.clientMethod = type.getMethod("startClient", ClientTransactionController.class);
-		this.serverMethod = type.getMethod("startServer", ServerTransactionController.class);
+		this.serverMethod = type.getMethod("startServer", ClientTransactionController.class);
 		this.name = name;
 
 		// The following conditions must be satisfied:
@@ -132,7 +134,7 @@ public class TransactionReference {
 		}
 
 	}
-	public void invokeMethod(ServerTransactionController controller) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+	public void invokeMethod(ClientTransactionController controller) throws IllegalAccessException, InvocationTargetException, InstantiationException {
 		
 		if (mode.equals(AccessMode.INSTANCE_REGISTRY)) {
 			serverMethod.invoke(InstanceRegistry.get(type), controller);

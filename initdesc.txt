@@ -1,0 +1,35 @@
+# Description of init process
+
+## 1. Greeting
+
+The initialization process starts with a greeting. This is
+a small negotiation to agree on the following:
+
+1. The status of the connection (success status, errno)
+2. The status of trust
+3. The latest server certificate
+4. The status of the client's certificate (validity and enrolment)
+5. The client's certificate
+6. The client's alias
+7. Supported extensions
+8. Random cookies (replay prevention)
+
+The greeting is able to be executed with just 3 messages
+(server -> client -> server -> client). This can be
+accomplished by using the following process:
+
+1. ServerGreeting:
+    - Trust
+    - Latest cert date
+    - Extension list
+    - Random cookies
+2. ClientGreeting:
+    - Alias
+    - Certificate
+    - Supported extensions
+    - Client's latest cert date
+    - Verification (including random cookies)
+3. ServerResponse:
+    - Status
+    - New certificate, with a seperate signature corresponding to the old one
+    - Enrolment status

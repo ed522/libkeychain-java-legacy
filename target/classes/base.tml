@@ -11,14 +11,21 @@
     </msg>
 
     <msg>
+        <!-- 
+            Base size: 25 bytes (no extensions)
+        -->
         <name>srv-greet</name>
         <field>
-            <name>rngnum1</name>
+            <name>rng1</name>
             <type>i64</type>
         </field>
         <field>
-            <name>rngnum2</name>
+            <name>rng2</name>
             <type>i64</type>
+        </field>
+        <field>
+            <name>certdate</name>
+            <type>u64</type> <!-- epoch time -->
         </field>
         <field>
             <name>rqexts</name>
@@ -29,23 +36,23 @@
             <type>bool</type>
         </field>
     </msg>
-
     <msg>
-
         <name>cli-greet</name>
-        
         <field>
             <name>success</name>
             <type>bool</type>
         </field>
         <field>
+            <name>certdate</name> <!-- date for the server's cert -->
+            <type>u64</type> <!-- epoch time -->
+        </field>
+        <field>
             <name>cert</name>
             <type>bin</type>
         </field>
-
         <proof factor="7" signed="true" />
-        
     </msg>
+
 
     <msg>
         <name>srv-greetresp</name>

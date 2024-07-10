@@ -33,7 +33,7 @@ public class Client {
 	private final Keystore store;
 	private final CryptoManager cryptoManager;
 
-	public Client(File keystoreFile, String alias, String password, ServerSpec server, Parameters params) throws IOException, GeneralSecurityException, OperatorCreationException {
+	public Client(File keystoreFile, String alias, String password, Parameters params) throws IOException, GeneralSecurityException, OperatorCreationException {
 		
 		if (params == null) params = new Parameters(false);
 		this.store = new Keystore(keystoreFile, password);
@@ -59,8 +59,9 @@ public class Client {
 	}
 	
 	public void connect(ServerSpec server) throws GeneralSecurityException, IOException {
-		
-		
+
+		this.connectSocket(server);
+		// TODO greeting
 
 	}
 
@@ -82,7 +83,7 @@ public class Client {
 		SSLContext context = SSLContext.getInstance("TLSv1.3");
 		context.init(kmFac.getKeyManagers(), tmFac.getTrustManagers(), new SecureRandom());
 
-		return (SSLSocket) context.getSocketFactory().createSocket(spec.getIp(), 42069);
+		return (SSLSocket) context.getSocketFactory().createSocket(spec.getIp(), Constants.PORT);
 
 	}
 
